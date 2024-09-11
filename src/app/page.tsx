@@ -199,16 +199,15 @@ export default function Home() {
       <p className="text-red-500 text-sm md:text-base">{validationMessage}</p>
     )}
 
-    <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:space-x-4">
-      <ShimmerButton className="shadow-2xl w-full md:w-auto">
+    <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:space-x-4 mx-20">
+      <ShimmerButton className="shadow-2xl  md:w-auto">
         <span className="whitespace-pre-wrap text-center text-sm font-medium leading-none tracking-tight text-white dark:from-white dark:to-slate-900/10 lg:text-lg">
           {loading ? "Generating..." : "Generate"}
         </span>
       </ShimmerButton>
 
       <button
-        className="inline-flex items-center justify-center w-full md:w-16 h-16 bg-gray-500 text-white rounded-full"
-        type="button"
+        className="inline-flex items-center justify-center w-full h-10 md:w-16 md:h-16 bg-gray-500 text-white rounded-full"        type="button"
         onClick={handleReset}
       >
         <svg
@@ -231,7 +230,7 @@ export default function Home() {
       <PulsatingButton
         type="button"
         onClick={isRecording ? handleStopRecording : handleStartRecording}
-        className={`btn w-full md:w-16 h-16 ${
+        className={`btn w-full h-10 md:w-16 md:h-16 ${
           isRecording
             ? "bg-green-500 text-white"
             : "bg-red-500 text-white"

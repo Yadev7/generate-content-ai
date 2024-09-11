@@ -10,17 +10,19 @@ import PulsatingButton from "@/components/magicui/pulsating-button";
 import Footer from "@/components/footer";
 import GoogleAdsense from "@/components/GoogleAdsense";
 
+
+
 // import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
 const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
+  src: "./public/fonts/GeistVF.woff",
   variable: "--font-geist-sans",
   weight: "100 900",
 });
 
 const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
+  src: "./public/fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
 });
@@ -128,13 +130,45 @@ export default function Home() {
     
   };
 
+  // const handleDownloadPDF = () => {
+  //   if (responseText) {
+  //     const doc = new jsPDF();
+  //     doc.text(responseText, 10, 10);
+  //     doc.save("generated-content.pdf");
+  //   }
+  // };
+
+
+
+
   const handleDownloadPDF = () => {
     if (responseText) {
       const doc = new jsPDF();
-      doc.text(responseText, 10, 10);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10; // You can adjust this value to change the margins
+      const maxLineWidth = pageWidth - 2 * margin; // Calculate max line width by subtracting margins
+      const lineHeight = 10; // Line height for the text
+  
+      // Split the response text into lines that fit within the max line width
+      const textLines = doc.splitTextToSize(responseText, maxLineWidth);
+  
+      // Position the text at (margin, margin) and add new lines until the end of the text
+      let yPosition = margin;
+  
+      textLines.forEach((line: string | string[]) => {
+        if (yPosition + lineHeight > pageHeight - margin) {
+          doc.addPage(); // Add a new page if the current page is full
+          yPosition = margin; // Reset the y-position for the new page
+        }
+        doc.text(line, margin, yPosition);
+        yPosition += lineHeight; // Move down for the next line
+      });
+  
       doc.save("generated-content.pdf");
     }
   };
+  
 
   return (
     <div

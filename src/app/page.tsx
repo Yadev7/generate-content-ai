@@ -16,13 +16,13 @@ import GoogleAdsense from "@/components/GoogleAdsense";
 import { Textarea } from "@/components/ui/textarea"
 
 const geistSans = localFont({
-  src: "./public/fonts/GeistVF.woff",
+  src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
   weight: "100 900",
 });
 
 const geistMono = localFont({
-  src: "./public/fonts/GeistMonoVF.woff",
+  src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
 });

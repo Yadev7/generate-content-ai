@@ -319,13 +319,7 @@ export default function Home() {
       <p className="text-red-500 text-sm md:text-base">{validationMessage}</p>
     )}
 
-    <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:space-x-4 items-center">
-      <ShimmerButton className="shadow-2xl w-full md:w-auto">
-        <span className="whitespace-pre-wrap text-center text-sm font-medium leading-none tracking-tight text-white dark:from-white dark:to-slate-900/10 lg:text-lg">
-          {loading ? "Generating..." : "Generate"}
-        </span>
-      </ShimmerButton>
-
+    <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:justify-between  md:space-x-2 md:items-center ">
       <button
         className="inline-flex items-center justify-center w-full h-10 md:w-16 md:h-16 bg-gray-500 text-white rounded-full"
         type="button"
@@ -347,6 +341,12 @@ export default function Home() {
           />
         </svg>
       </button>
+
+      <ShimmerButton className="shadow-2xl w-full md:w-auto">
+        <span className="whitespace-pre-wrap text-center text-sm font-medium leading-none tracking-tight text-white dark:from-white dark:to-slate-900/10 lg:text-lg">
+          {loading ? "Generating..." : "Generate"}
+        </span>
+      </ShimmerButton>
 
       <PulsatingButton
         type="button"

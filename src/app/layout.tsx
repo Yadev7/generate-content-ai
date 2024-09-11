@@ -16,7 +16,10 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "AI Smartest Chat",
-  description: "This is an AI powered chat bot, based on Gemini API , which can answer any question related to AI.  ",
+  description: "This is an AI powered chat bot, based on Gemini API , which can answer any question related to AI.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({

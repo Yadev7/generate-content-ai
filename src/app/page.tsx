@@ -14,15 +14,14 @@ import Image from "next/image";
 // import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea";
 
-
 const geistSans = localFont({
-  src: "https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@100..900&display=swap",
+  src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
   weight: "100 900",
 });
 
 const geistMono = localFont({
-  src: "https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@100..900&display=swap",
+  src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
 });
@@ -54,6 +53,8 @@ export default function Home() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  
 
   const handleReset = () => {
     setPrompt("");
@@ -298,12 +299,14 @@ export default function Home() {
             <p className="text-red-500 text-sm md:text-base">{error}</p>
           )}
           {responseText && (
-            <div className="mt-4 p-4 border rounded bg-gray-100">
-              <p>Generated Content:</p>
-              <textarea
-                className="w-full h-40 md:h-60 border rounded p-2 text-gray-700 resize-none overflow-auto"
+            <div className="mt-4 p-4  rounded bg-gray-100">
+              <p className="font-bold mb-4">Generated Content:</p>
+              <Textarea
+                className="w-full h-40 md:h-60 border rounded p-2 text-gray-700 resize-none"
                 value={responseText}
-                readOnly
+                cols={50}
+                rows={10}
+                onChange={(e) => setResponseText(e.target.value)}
               />
               <button
                 type="button"

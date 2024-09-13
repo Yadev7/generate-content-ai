@@ -107,6 +107,7 @@ export default function Home() {
     setResponseText("");
     setValidationMessage("");
 
+
     const response = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyAoMN85HNmohSDrBAS0YOIOXKE4khlSkxo",
       {
@@ -134,6 +135,8 @@ export default function Home() {
       .join("\n\n");
 
     setResponseText(generatedText);
+    setLoading(false);
+    setPrompt("");
   };
 
   // const handleDownloadPDF = () => {

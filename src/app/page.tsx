@@ -134,15 +134,11 @@ export default function Home() {
       .join("\n\n");
 
     setResponseText(generatedText);
+    setLoading(false);
+    setPrompt("");
   };
 
-  // const handleDownloadPDF = () => {
-  //   if (responseText) {
-  //     const doc = new jsPDF();
-  //     doc.text(responseText, 10, 10);
-  //     doc.save("generated-content.pdf");
-  //   }
-  // };
+
 
   const handleDownloadPDF = () => {
     if (responseText) {

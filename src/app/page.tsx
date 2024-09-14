@@ -104,6 +104,64 @@ export default function ChatPage() {
   //   }
   // };
 
+  // const handleSendMessage = async () => {
+  //   if (message.trim()) {
+  //     // Add user's message to the conversation
+  //     setMessages((prev) => [
+  //       ...prev,
+  //       { sender: "user", content: message.trim(), type: "text" },
+  //     ]);
+
+  //     setMessage(""); // Clear input field
+
+  //     try {
+  //       // Send the message to the API
+  //       const response = await fetch(
+  //         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyAoMN85HNmohSDrBAS0YOIOXKE4khlSkxo`,
+  //         {
+  //           method: "POST",
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //           },
+  //           body: JSON.stringify({
+  //             contents: [{ parts: [{ text: message.trim() }] }],
+  //           }),
+  //         }
+  //       );
+
+  //       if (!response.ok) {
+  //         throw new Error("API request failed");
+  //       }
+
+  //       const data = await response.json();
+  //       const generatedText = data.candidates
+  //         .map((candidate: { content: { parts: [] } }) =>
+  //           candidate.content.parts
+  //             .map((part: { text: string }) => part.text)
+  //             .join("")
+  //         )
+  //         .join("\n\n");
+
+  //       // Add AI's response to the conversation
+  //       setMessages((prev) => [
+  //         ...prev,
+  //         { sender: "bot", content: generatedText, type: "text" },
+  //       ]);
+  //     } catch (error) {
+  //       console.error("Error generating content:", error);
+  //       setMessages((prev) => [
+  //         ...prev,
+  //         {
+  //           sender: "bot",
+  //           content: "Failed to generate content.",
+  //           type: "text",
+  //         },
+  //       ]);
+  //     }
+  //   }
+  // };
+
+
   const handleSendMessage = async () => {
     if (message.trim()) {
       // Add user's message to the conversation
@@ -111,9 +169,9 @@ export default function ChatPage() {
         ...prev,
         { sender: "user", content: message.trim(), type: "text" },
       ]);
-
+  
       setMessage(""); // Clear input field
-
+  
       try {
         // Send the message to the API
         const response = await fetch(
@@ -128,11 +186,11 @@ export default function ChatPage() {
             }),
           }
         );
-
+  
         if (!response.ok) {
           throw new Error("API request failed");
         }
-
+  
         const data = await response.json();
         const generatedText = data.candidates
           .map((candidate: { content: { parts: [] } }) =>
@@ -141,12 +199,41 @@ export default function ChatPage() {
               .join("")
           )
           .join("\n\n");
-
-        // Add AI's response to the conversation
+  
+        // Add "Typing..." message before starting the typing effect
         setMessages((prev) => [
           ...prev,
-          { sender: "bot", content: generatedText, type: "text" },
+          { sender: "bot", content: "Typing...", type: "text" },
         ]);
+  
+        // Typing effect
+        let typingIndex = 0;
+        const typingSpeed = 50; // Adjust typing speed (in ms)
+  
+        const typeText = () => {
+          if (typingIndex < generatedText.length) {
+            setMessages((prev) => {
+              // Copy previous messages
+              const updatedMessages = [...prev];
+              
+              // Find the last message (which is "Typing...")
+              const lastMessage = updatedMessages[updatedMessages.length - 1];
+  
+              // Update the content of the last message
+              updatedMessages[updatedMessages.length - 1] = {
+                ...lastMessage,
+                content: generatedText.slice(0, typingIndex + 1), // Show partial text as it's being typed
+              };
+  
+              return updatedMessages;
+            });
+  
+            typingIndex++;
+            setTimeout(typeText, typingSpeed);
+          }
+        };
+  
+        setTimeout(typeText, typingSpeed); // Start typing effect
       } catch (error) {
         console.error("Error generating content:", error);
         setMessages((prev) => [
@@ -160,6 +247,7 @@ export default function ChatPage() {
       }
     }
   };
+  
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter") {
@@ -215,12 +303,14 @@ export default function ChatPage() {
       <footer className="w-full p-4 bg-gray-200">
         <div className="flex flex-col lg:flex-row items-start lg:items-center">
           <Textarea
-            className="w-full lg:flex-1 border rounded p-2 mb-4 lg:mb-0 lg:mr-4"
+            className="w-full lg:flex-1 border-lg rounded p-2 mb-4 lg:mb-0 lg:mr-4"
             placeholder="Type your message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
+            style={{ resize: "none" }}
+            autoFocus
           />
 
           <div className="flex w-full lg:w-auto flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-2">
@@ -248,13 +338,19 @@ export default function ChatPage() {
 
             <button
               onClick={handleSendMessage}
-              className="w-full lg:w-auto bg-blue-500 text-white px-4 py-2 rounded-full flex justify-center items-center"
+              className={`w-full lg:w-auto px-4 py-2 rounded-full flex justify-center items-center 
+    ${
+      message.trim()
+        ? "bg-blue-500 text-white"
+        : "bg-gray-400 text-gray-200 cursor-not-allowed"
+    }`}
+              disabled={!message.trim()} // Disable the button if message is empty or just spaces
             >
               <svg
                 viewBox="0 -24 502.13333 502"
                 xmlns="http://www.w3.org/2000/svg"
-                 width="24"
-                  height="24"
+                width="24"
+                height="24"
               >
                 <path d="m0 454.464844 57.199219-227.199219-57.199219-227.1992188 502.132812 227.1992188zm31.464844-416.664063 47.734375 189.464844-47.734375 189.46875 418.933594-189.46875zm0 0" />
                 <path d="m68.265625 216.601562h408v21.332032h-408zm0 0" />

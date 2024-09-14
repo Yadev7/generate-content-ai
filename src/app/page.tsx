@@ -198,7 +198,7 @@ export default function ChatPage() {
             <div
               className={`${
                 msg.sender === "user"
-                  ? "bg-blue-500 text-white"
+                  ? "bg-blue-400 text-white"
                   : "bg-gray-300 text-black"
               } p-2 rounded-lg max-w-xs`}
             >
@@ -213,59 +213,98 @@ export default function ChatPage() {
       </div>
 
       <footer className="w-full p-4 bg-gray-200">
-  <div className="flex flex-col lg:flex-row items-start lg:items-center">
-    <Textarea
-      className="w-full lg:flex-1 border rounded p-2 mb-4 lg:mb-0 lg:mr-4"
-      placeholder="Type your message"
-      value={message}
-      onChange={(e) => setMessage(e.target.value)}
-      onKeyDown={handleKeyDown}
-      rows={1}
-    />
-
-    <div className="flex w-full lg:w-auto flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-2">
-      <button
-        className="w-full lg:w-auto bg-gray-500 text-white px-4 py-2 rounded-full"
-        type="button"
-        onClick={handleReset}
-      >
-        Reset
-        {/* <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M2 10C2 10 4.00498 7.26822 5.63384 5.63824C7.26269 4.00827 9.5136 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.89691 21 4.43511 18.2543 3.35177 14.5M2 10V4M2 10H8"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="flex flex-col lg:flex-row items-start lg:items-center">
+          <Textarea
+            className="w-full lg:flex-1 border rounded p-2 mb-4 lg:mb-0 lg:mr-4"
+            placeholder="Type your message"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
           />
-        </svg> */}
-      </button>
 
-      <button
-        onClick={handleSendMessage}
-        className="w-full lg:w-auto bg-blue-500 text-white px-4 py-2 rounded-full"
-      >
-        Send
-      </button>
+          <div className="flex w-full lg:w-auto flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-2">
+            <button
+              className="w-full lg:w-auto bg-gray-500 text-white px-4 py-2 rounded-full flex justify-center items-center"
+              type="button"
+              onClick={handleReset}
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M2 10C2 10 4.00498 7.26822 5.63384 5.63824C7.26269 4.00827 9.5136 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.89691 21 4.43511 18.2543 3.35177 14.5M2 10V4M2 10H8"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
 
-      <button
-        onClick={isRecording ? handleStopRecording : handleStartRecording}
-        className={`w-full lg:w-auto px-4 py-2 rounded-full ${
-          isRecording ? "bg-green-500" : "bg-red-500"
-        } text-white`}
-      >
-        {isRecording ? "Stop" : "Record"}
-      </button>
-    </div>
-  </div>
-</footer>
+            <button
+              onClick={handleSendMessage}
+              className="w-full lg:w-auto bg-blue-500 text-white px-4 py-2 rounded-full flex justify-center items-center"
+            >
+              <svg
+                viewBox="0 -24 502.13333 502"
+                xmlns="http://www.w3.org/2000/svg"
+                 width="24"
+                  height="24"
+              >
+                <path d="m0 454.464844 57.199219-227.199219-57.199219-227.1992188 502.132812 227.1992188zm31.464844-416.664063 47.734375 189.464844-47.734375 189.46875 418.933594-189.46875zm0 0" />
+                <path d="m68.265625 216.601562h408v21.332032h-408zm0 0" />
+              </svg>
+            </button>
 
+            <button
+              onClick={isRecording ? handleStopRecording : handleStartRecording}
+              className={`w-full lg:w-auto px-4 py-2 rounded-full  flex justify-center items-center ${
+                isRecording ? "bg-green-500" : "bg-red-500"
+              } text-white`}
+            >
+              {isRecording ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="feather feather-square"
+                >
+                  <rect x="6" y="6" width="12" height="12"></rect>
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="feather feather-mic"
+                >
+                  <path d="M12 1C9.79 1 8 2.79 8 5v6c0 2.21 1.79 4 4 4s4-1.79 4-4V5c0-2.21-1.79-4-4-4z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+      </footer>
 
       <Footer />
     </div>

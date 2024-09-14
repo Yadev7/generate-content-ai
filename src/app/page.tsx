@@ -229,7 +229,8 @@ export default function ChatPage() {
         type="button"
         onClick={handleReset}
       >
-        <svg
+        Reset
+        {/* <svg
           width="24"
           height="24"
           viewBox="0 0 24 24"
@@ -243,7 +244,7 @@ export default function ChatPage() {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-        </svg>
+        </svg> */}
       </button>
 
       <button

@@ -6,6 +6,7 @@ import Image from "next/image";
 import Footer from "@/components/footer";
 import { Textarea } from "@/components/ui/textarea";
 import { jsPDF } from "jspdf";
+import PulsatingButton from "@/components/magicui/pulsating-button";
 
 
 const geistSans = localFont({
@@ -201,6 +202,8 @@ export default function ChatPage() {
         yOffset += lineHeight;
       }
     });
+    
+    
 
     // Save the generated PDF file
     doc.save("chat.pdf");
@@ -275,6 +278,8 @@ export default function ChatPage() {
             msg.sender === "bot" &&
             (index === 0 || messages[index - 1].sender !== "bot");
 
+            
+
           return (
             <div
               key={index}
@@ -307,11 +312,8 @@ export default function ChatPage() {
                     {msg.content}
                   </p>
                 ) : (
-                  <audio
-                    controls
-                    className="w-full mt-2"
-                    src={msg.content}
-                  ></audio>
+                  <audio controls src={msg.content}></audio>
+
                 )}
               </div>
             </div>
@@ -376,47 +378,53 @@ export default function ChatPage() {
               </svg>
             </button>
 
-            <button
-              onClick={isRecording ? handleStopRecording : handleStartRecording}
-              className={`w-full lg:w-auto px-4 py-2 rounded-full  flex justify-center items-center ${
-                isRecording ? "bg-green-500" : "bg-red-500"
-              } text-white`}
-            >
-              {isRecording ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="feather feather-square"
-                >
-                  <rect x="6" y="6" width="12" height="12"></rect>
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="feather feather-mic"
-                >
-                  <path d="M12 1C9.79 1 8 2.79 8 5v6c0 2.21 1.79 4 4 4s4-1.79 4-4V5c0-2.21-1.79-4-4-4z"></path>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                  <line x1="12" y1="19" x2="12" y2="23"></line>
-                  <line x1="8" y1="23" x2="16" y2="23"></line>
-                </svg>
-              )}
-            </button>
+            <PulsatingButton
+                type="button"
+                onClick={
+                  isRecording ? handleStopRecording : handleStartRecording
+                }
+                className={`btn w-full h-10 md:w-16 md:h-10 ${
+                  isRecording
+                    ? "bg-green-500 text-white"
+                    : "bg-red-500 text-white"
+                } rounded-full`}
+              >
+                {isRecording ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="feather feather-square"
+                  >
+                    <rect x="6" y="6" width="12" height="12"></rect>
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="feather feather-mic"
+                  >
+                    <path d="M12 1C9.79 1 8 2.79 8 5v6c0 2.21 1.79 4 4 4s4-1.79 4-4V5c0-2.21-1.79-4-4-4z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                )}
+              </PulsatingButton>
+
 
             
 

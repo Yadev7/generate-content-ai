@@ -404,7 +404,7 @@ export default function ChatPage() {
                   msg.sender === "user"
                     ? "bg-blue-500 text-white"
                     : "bg-gray-100 text-black"
-                } p-4 rounded-xl max-w-[80%] mx-4 my-2 ${
+                } p-2 rounded-sm ${
                   msg.sender === "user" ? "self-end" : "self-start"
                 }`}
               >

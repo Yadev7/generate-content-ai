@@ -343,9 +343,9 @@ export default function ChatPage() {
               aria-pressed={topicContext === topic.value}
               key={index}
               onClick={() => setTopicContext(topic.value)}
-              className={`p-3 bg-white rounded-lg shadow-lg cursor-pointer transform hover:scale-105 hover:bg-green-300 transition-transform duration-300 ease-in-out 
+              className={`p-3 bg-white rounded-lg shadow-lg cursor-pointer transform hover:scale-105 hover:bg-green-300  transition-transform duration-300 ease-in-out 
               ${
-                topicContext === topic.value ? "border-4 border-blue-500" : ""
+                topicContext === topic.value ? "border-4 border-blue-500 bg-green-300" : ""
               }`}
             >
               <div className="flex flex-col items-center">

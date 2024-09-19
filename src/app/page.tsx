@@ -59,7 +59,7 @@ export default function ChatPage() {
     
     {
       value: "Chatbot react now as Digital Marketing Expert",
-      label: " Marketing Expert",
+      label: "Marketing Expert",
       icon: <FaBook size={30} />,
     },
   ];
@@ -68,6 +68,8 @@ export default function ChatPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const chatBoxRef = useRef<HTMLDivElement>(null);
+
+  
 
   const handleReset = () => {
     setMessage("");
@@ -86,6 +88,8 @@ export default function ChatPage() {
     if (chatBoxRef.current) {
       chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
     }
+
+    window.location.reload();
   };
 
   useEffect(() => {

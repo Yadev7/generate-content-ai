@@ -112,10 +112,57 @@ export default function ChatPage() {
     }
   };
 
+  // const handleStopRecording = () => {
+  //   mediaRecorderRef.current?.stop();
+  //   setIsRecording(false);
+  //   setMessage("Recording stopped.");
+    
+  // };
+
+
   const handleStopRecording = () => {
+    // Stop the media recorder
     mediaRecorderRef.current?.stop();
     setIsRecording(false);
+  
+    // Convert recorded audio to text using Web Speech API
+    if ('webkitSpeechRecognition' in window) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const SpeechRecognition = (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+  
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US'; // Set language to English (adjust as needed)
+  
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        console.log("Transcript:", transcript);
+  
+        // Update message with the transcribed text
+        setMessage(transcript);
+        console.log("Message:", message);
+        
+        // Add to messages as a "text" type
+        setMessages((prev) => [
+          ...prev,
+          { sender: "user", content: transcript, type: "text" },
+        ]);
+      };
+  
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+      };
+  
+      // Start speech recognition after stopping recording
+      recognition.start();
+    } else {
+      console.log('Speech recognition not supported in this browser.');
+    }
   };
+  
 
   const handleSendMessage = async () => {
     if (message.trim()) {
@@ -273,7 +320,7 @@ export default function ChatPage() {
         />
         <h1 className="grid grid-cols-1 font-bold text-md">Chat with SAI</h1>
 
-        <div className="grid grid-cols-2  sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1  sm:grid-cols-2 md:grid-cols-4 gap-4">
           {topics.map((topic, index) => (
             <div
               role="button"

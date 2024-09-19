@@ -7,7 +7,7 @@ import Footer from "@/components/footer";
 import { Textarea } from "@/components/ui/textarea";
 import { jsPDF } from "jspdf";
 import PulsatingButton from "@/components/magicui/pulsating-button";
-import { FaDumbbell, FaCalculator, FaUtensils, FaCode } from "react-icons/fa"; // Example icons
+import { FaDumbbell, FaCalculator, FaUtensils, FaCode, FaMusic, FaBook } from "react-icons/fa"; // Example icons
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -48,6 +48,19 @@ export default function ChatPage() {
       value: "Chatbot react now as Fullstack Expert",
       label: "Fullstack Expert",
       icon: <FaCode size={30} />,
+    },
+
+    {
+      value: "Chatbot react now as Audio Expert",
+      label: " Audio Expert",
+      icon: <FaMusic size={30} />,
+    },
+
+    
+    {
+      value: "Chatbot react now as Digital Marketing Expert",
+      label: " Marketing Expert",
+      icon: <FaBook size={30} />,
     },
   ];
 
@@ -319,7 +332,7 @@ export default function ChatPage() {
         />
         <h1 className="hidden md:flex font-bold text-md">Chat with SAI</h1>
 
-        <div className="grid grid-cols-4  sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-6  sm:grid-cols-2 md:grid-cols-6 gap-4">
           {topics.map((topic, index) => (
             <div
               role="button"

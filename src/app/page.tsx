@@ -345,7 +345,7 @@ export default function ChatPage() {
               onClick={() => setTopicContext(topic.value)}
               className={`p-3 bg-white rounded-lg shadow-lg cursor-pointer transform hover:scale-105 hover:bg-green-300  transition-transform duration-300 ease-in-out 
               ${
-                topicContext === topic.value ? "border-4 border-blue-500 bg-green-300 md:border-blue-500 md:bg-green-300" : ""
+                topicContext === topic.value ? "border-2 border-blue-500 bg-green-300 md:border-blue-500 md:bg-green-300" : ""
               }`}
             >
               <div className="flex flex-col items-center">

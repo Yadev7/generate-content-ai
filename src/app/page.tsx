@@ -7,7 +7,7 @@ import Footer from "@/components/footer";
 import { Textarea } from "@/components/ui/textarea";
 import { jsPDF } from "jspdf";
 import PulsatingButton from "@/components/magicui/pulsating-button";
-
+import { FaDumbbell, FaCalculator, FaUtensils, FaCode } from "react-icons/fa"; // Example icons
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -27,6 +27,30 @@ export default function ChatPage() {
   >([]);
   const [message, setMessage] = useState("");
   const [topicContext, setTopicContext] = useState("");
+
+  const topics = [
+    {
+      value: "Chatbot react now as Fitness Expert",
+      label: "Fitness Expert",
+      icon: <FaDumbbell size={30} />,
+    },
+    {
+      value: "Chatbot react now as Math Expert",
+      label: "Math Expert",
+      icon: <FaCalculator size={30} />,
+    },
+    {
+      value: "Chatbot react now as Cooking Expert",
+      label: "Cooking Expert",
+      icon: <FaUtensils size={30} />,
+    },
+    {
+      value: "Chatbot react now as Fullstack Expert",
+      label: "Fullstack Expert",
+      icon: <FaCode size={30} />,
+    },
+  ];
+
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -52,10 +76,8 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-
     if (chatBoxRef.current) {
       chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
-
     }
   }, [messages]);
 
@@ -202,8 +224,6 @@ export default function ChatPage() {
         yOffset += lineHeight;
       }
     });
-    
-    
 
     // Save the generated PDF file
     doc.save("chat.pdf");
@@ -243,7 +263,7 @@ export default function ChatPage() {
     <div
       className={`${geistSans.variable} ${geistMono.variable} flex flex-col items-center justify-between h-screen`}
     >
-      <header className="w-full flex items-center justify-between p-4 bg-gray-200">
+      <header className="w-full h-25 flex items-center justify-between p-4 text-lg bg-gray-300">
         <Image
           src={"/logo.png"}
           alt="Logo"
@@ -251,21 +271,41 @@ export default function ChatPage() {
           height={50}
           className="rounded-full"
         />
-        <h1 className="font-bold text-lg">Chat with SAI</h1>
+        <h1 className="grid grid-cols-1 font-bold text-md">Chat with SAI</h1>
 
-        <select
+        <div className="grid grid-cols-2  sm:grid-cols-2 md:grid-cols-4 gap-4">
+          {topics.map((topic, index) => (
+            <div
+              role="button"
+              aria-pressed={topicContext === topic.value}
+              key={index}
+              onClick={() => setTopicContext(topic.value)}
+              className={`p-3 bg-white rounded-lg shadow-lg cursor-pointer transform hover:scale-105 hover:bg-green-300 transition-transform duration-300 ease-in-out 
+              ${
+                topicContext === topic.value ? "border-4 border-blue-500" : ""
+              }`}
+            >
+              <div className="flex flex-col items-center">
+                <div className="text-blue-500">{topic.icon}</div>
+                <h6 className="text-lg font-semibold text-gray-700">
+                  {topic.label}
+                </h6>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* <select
           name="topicContext"
           id="topicContext"
           value={topicContext}
           onChange={(e) => setTopicContext(e.target.value)}
         >
-          <option value="You are a fitness expert">Fitness expert </option>
-          <option value="You are a mathematics expert"> Math Expert </option>
-          <option value="You are a cook expert"> Cook Expert</option>
-          <option value="You are a fullstack developer expert">
-            Fullstack Expert
-          </option>
-        </select>
+          <option value="You are now interacting as Fitness Expert">Fitness expert </option>
+          <option value="You are now interacting as Math Expert"> Math Expert </option>
+          <option value="You are a cook expertYou are now interacting as Cooking Expert"> Cooking Expert</option>
+          <option value="You are now interacting as Fullstack Expert"> Fullstack Expert </option>
+        </select> */}
       </header>
 
       <div
@@ -277,8 +317,6 @@ export default function ChatPage() {
           const isFirstBotMessage =
             msg.sender === "bot" &&
             (index === 0 || messages[index - 1].sender !== "bot");
-
-            
 
           return (
             <div
@@ -313,7 +351,6 @@ export default function ChatPage() {
                   </p>
                 ) : (
                   <audio controls src={msg.content}></audio>
-
                 )}
               </div>
             </div>
@@ -321,8 +358,12 @@ export default function ChatPage() {
         })}
       </div>
 
-      <footer className="w-full p-4 bg-gray-200">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center">
+      <footer className="w-full p-4 bg-gray-200 mb-5">
+        <span className="mb-10 text-md font-bold text-blue-600">
+          {topicContext}
+        </span>
+
+        <div className="flex flex-col lg:flex-row items-start lg:items-center mt-3">
           <Textarea
             className="w-full lg:flex-1 border-lg rounded p-2 mb-4 lg:mb-0 lg:mr-4"
             placeholder="Type your message"
@@ -379,54 +420,49 @@ export default function ChatPage() {
             </button>
 
             <PulsatingButton
-                type="button"
-                onClick={
-                  isRecording ? handleStopRecording : handleStartRecording
-                }
-                className={`btn w-full h-10 md:w-16 md:h-10 ${
-                  isRecording
-                    ? "bg-green-500 text-white"
-                    : "bg-red-500 text-white"
-                } rounded-full`}
-              >
-                {isRecording ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="feather feather-square"
-                  >
-                    <rect x="6" y="6" width="12" height="12"></rect>
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="feather feather-mic"
-                  >
-                    <path d="M12 1C9.79 1 8 2.79 8 5v6c0 2.21 1.79 4 4 4s4-1.79 4-4V5c0-2.21-1.79-4-4-4z"></path>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                    <line x1="12" y1="19" x2="12" y2="23"></line>
-                    <line x1="8" y1="23" x2="16" y2="23"></line>
-                  </svg>
-                )}
-              </PulsatingButton>
-
-
-            
+              type="button"
+              onClick={isRecording ? handleStopRecording : handleStartRecording}
+              className={`btn w-full h-10 md:w-16 md:h-10 ${
+                isRecording
+                  ? "bg-green-500 text-white"
+                  : "bg-red-500 text-white"
+              } rounded-full`}
+            >
+              {isRecording ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="feather feather-square"
+                >
+                  <rect x="6" y="6" width="12" height="12"></rect>
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="feather feather-mic"
+                >
+                  <path d="M12 1C9.79 1 8 2.79 8 5v6c0 2.21 1.79 4 4 4s4-1.79 4-4V5c0-2.21-1.79-4-4-4z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              )}
+            </PulsatingButton>
 
             <button
               onClick={handleDownloadPDF}

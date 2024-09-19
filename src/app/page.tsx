@@ -142,7 +142,6 @@ export default function ChatPage() {
   
         // Update message with the transcribed text
         setMessage(transcript);
-        console.log("Message:", message);
         
         // Add to messages as a "text" type
         setMessages((prev) => [
@@ -310,17 +309,17 @@ export default function ChatPage() {
     <div
       className={`${geistSans.variable} ${geistMono.variable} flex flex-col items-center justify-between h-screen`}
     >
-      <header className="w-full h-25 flex items-center justify-between p-4 text-lg bg-gray-300">
+      <header className="w-full h-15  md:h-25 flex items-center justify-between p-4 text-lg bg-gray-300">
         <Image
           src={"/logo.png"}
           alt="Logo"
           width={50}
           height={50}
-          className="rounded-full"
+          className="rounded-full hidden md:flex"
         />
-        <h1 className="grid grid-cols-1 font-bold text-md">Chat with SAI</h1>
+        <h1 className="hidden md:flex font-bold text-md">Chat with SAI</h1>
 
-        <div className="grid grid-cols-1  sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-4  sm:grid-cols-2 md:grid-cols-4 gap-4">
           {topics.map((topic, index) => (
             <div
               role="button"
@@ -333,8 +332,8 @@ export default function ChatPage() {
               }`}
             >
               <div className="flex flex-col items-center">
-                <div className="text-blue-500">{topic.icon}</div>
-                <h6 className="text-lg font-semibold text-gray-700">
+                <div className="text-blue-500 items-center">{topic.icon}</div>
+                <h6 className="text-lg font-semibold text-gray-700 hidden md:flex ">
                   {topic.label}
                 </h6>
               </div>
@@ -356,7 +355,7 @@ export default function ChatPage() {
       </header>
 
       <div
-        className="flex-1 w-full p-4 overflow-y-auto bg-gray-100"
+        className="flex-1 w-full h-full p-4 overflow-y-auto bg-gray-100"
         ref={chatBoxRef}
         style={{ height: "calc(100vh - 150px)" }}
       >
@@ -422,13 +421,15 @@ export default function ChatPage() {
             autoFocus
           />
 
-          <div className="flex w-full lg:w-auto flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-2">
-            <button
+
+{/* flex-col lg:flex-row space-y-2  */}
+          <div className="grid grid-cols-4 gap-4  md:flex w-full lg:w-auto lg:space-y-0 lg:space-x-2">
+          <button
+               onClick={handleReset}
               className="w-full lg:w-auto bg-gray-500 text-white px-4 py-2 rounded-full flex justify-center items-center"
-              type="button"
-              onClick={handleReset}
+              
             >
-              <svg
+             <svg
                 width="24"
                 height="24"
                 viewBox="0 0 24 24"
@@ -443,7 +444,11 @@ export default function ChatPage() {
                   strokeLinejoin="round"
                 />
               </svg>
+           
             </button>
+
+
+
 
             <button
               onClick={handleSendMessage}
@@ -516,7 +521,7 @@ export default function ChatPage() {
               className="w-full lg:w-auto bg-purple-500 text-white px-4 py-2 rounded-full flex justify-center items-center"
               disabled={!chatBoxRef.current}
             >
-              {/* <svg
+              <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
                 height="24"
@@ -531,9 +536,10 @@ export default function ChatPage() {
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg> */}
-              Download PDF
+              </svg>
+           
             </button>
+
           </div>
         </div>
       </footer>

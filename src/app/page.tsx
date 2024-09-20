@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { jsPDF } from "jspdf";
 import PulsatingButton from "@/components/magicui/pulsating-button";
 import { FaDumbbell, FaCalculator, FaUtensils, FaCode, FaMusic, FaBook } from "react-icons/fa"; // Example icons
+import ThemeSwitch from "@/components/ThemeSwitch";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -302,6 +303,8 @@ export default function ChatPage() {
   };
 
 
+
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -313,52 +316,45 @@ export default function ChatPage() {
     <div
       className={`${geistSans.variable} ${geistMono.variable} flex flex-col items-center justify-between h-screen`}
     >
-      <header className="w-full h-15  md:h-25 flex items-center justify-between p-4 text-lg bg-gray-300">
-        <Image
-          src={"/logo.png"}
-          alt="Logo"
-          width={50}
-          height={50}
-          className="rounded-full hidden md:flex"
-        />
-        <h1 className="hidden md:flex font-bold text-md">Chat with SAI</h1>
-
-        <div className="grid grid-cols-6  sm:grid-cols-2 md:grid-cols-6 gap-4">
-          {topics.map((topic, index) => (
-            <div
-              role="button"
-              aria-pressed={topicContext === topic.value}
-              key={index}
-              onClick={() => setTopicContext(topic.value)}
-              className={`p-3 bg-white rounded-lg shadow-lg cursor-pointer transform hover:scale-105 hover:bg-green-300  transition-transform duration-300 ease-in-out 
-              ${
-                topicContext === topic.value ? "border-4 border-blue-500 bg-green-300 md:border-blue-500 md:bg-green-300" : ""
-              }`}
-            >
-              <div className="flex flex-col items-center">
-                <div className="text-blue-500 items-center">{topic.icon}</div>
-                <h6 className="text-lg font-semibold text-gray-700 hidden md:flex ">
-                  {topic.label}
-                </h6>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* <select
-          name="topicContext"
-          id="topicContext"
-          value={topicContext}
-          onChange={(e) => setTopicContext(e.target.value)}
-        >
-          <option value="You are now interacting as Fitness Expert">Fitness expert </option>
-          <option value="You are now interacting as Math Expert"> Math Expert </option>
-          <option value="You are a cook expertYou are now interacting as Cooking Expert"> Cooking Expert</option>
-          <option value="You are now interacting as Fullstack Expert"> Fullstack Expert </option>
-        </select> */}
-      </header>
-
+  
+  <header className="w-full h-15 md:h-25 flex items-center justify-between p-4 text-lg bg-card text-card-foreground">
+  <Image
+    src={"/logo.png"}
+    alt="Logo"
+    width={50}
+    height={50}
+    className="rounded-full hidden md:flex"
+  />
+  <h1 className="hidden md:flex font-bold text-md">Chat with SAI</h1>
+  <div className="mr-4">
+    <ThemeSwitch /> 
+  </div>
+ 
+  <div className="grid grid-cols-6 sm:grid-cols-2 md:grid-cols-6 gap-4">
+    {topics.map((topic, index) => (
       <div
+        role="button"
+        aria-pressed={topicContext === topic.value}
+        key={index}
+        onClick={() => setTopicContext(topic.value)}
+        className={`p-3 bg-secondary text-secondary-foreground rounded-lg shadow-lg cursor-pointer transform hover:scale-105 hover:bg-accent transition-transform duration-300 ease-in-out ${
+          topicContext === topic.value
+            ? "border-4 border-primary bg-accent"
+            : ""
+        }`}
+      >
+        <div className="flex flex-col items-center">
+          <div className="text-primary items-center">{topic.icon}</div>
+          <h6 className="text-lg font-semibold hidden md:flex">
+            {topic.label}
+          </h6>
+        </div>
+      </div>
+    ))}
+  </div>
+</header>
+
+      {/* <div
         className="flex-1 w-full h-full p-4 overflow-y-auto bg-gray-100"
         ref={chatBoxRef}
         style={{ height: "calc(100vh - 150px)" }}
@@ -415,9 +411,67 @@ export default function ChatPage() {
             </div>
           );
         })}
-      </div>
+      </div> */}
 
-      <footer className="w-full p-4 bg-gray-200 mb-5">
+<div
+  className="flex-1 w-full h-full p-4 overflow-y-auto bg-transparent text-black"
+  ref={chatBoxRef}
+  style={{ height: "calc(100vh - 150px)" }}
+>
+  {messages.map((msg, index) => {
+    const isFirstBotMessage =
+      msg.sender === "bot" &&
+      (index === 0 || messages[index - 1].sender !== "bot");
+
+    return (
+      <div
+        key={index}
+        className={`w-full my-3 flex ${
+          msg.sender === "user" ? "justify-end" : "justify-start"
+        } items-center`}
+      >
+        {isFirstBotMessage && (
+          <div>
+            <Image
+              src="/logo.png"
+              alt="Logo"
+              width={40}
+              height={40}
+              className="rounded-md"
+            />
+          </div>
+        )}
+        <div
+          className={`p-2 rounded-full ${
+            msg.sender === "user"
+              ? "bg-primary text-primary-foreground"
+              : "bg-card text-card-foreground"
+          }`}
+        >
+          {msg.type === "text" ? (
+            <p className="whitespace-pre-wrap leading-relaxed">
+              {msg.content}
+            </p>
+          ) : (
+            <audio controls src={msg.content}></audio>
+          )}
+        </div>
+        {msg.sender === "bot" && msg.type === "text" && (
+          <button
+            onClick={() => handleCopy(msg.content, index)}
+            className="middle-2 right-50 text-black bg-green-300 rounded-md p-1"
+          >
+            {copiedMessageIndex === index ? "Copied" : "Copy"}
+          </button>
+        )}
+      </div>
+    );
+  })}
+</div>
+
+    
+
+      <div className="w-full p-4 bg-gray-200 mb-5">
         <span className="mb-10 text-md font-bold text-blue-600">
           {topicContext}
         </span>
@@ -555,7 +609,7 @@ export default function ChatPage() {
 
           </div>
         </div>
-      </footer>
+      </div>
 
       <Footer />
     </div>

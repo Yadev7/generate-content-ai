@@ -69,6 +69,15 @@ export default function ChatPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const chatBoxRef = useRef<HTMLDivElement>(null);
 
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
+
+  const handleCopy = (content: string, index: number) => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopiedMessageIndex(index);
+      setTimeout(() => setCopiedMessageIndex(null), 2000);
+    });
+  };
+
   
 
   const handleReset = () => {
@@ -292,31 +301,9 @@ export default function ChatPage() {
     doc.save("chat.pdf");
   };
 
-  // const handleDownloadPDF = () => {
-  //   const doc = new jsPDF();
-  //   let yOffset = 10;
-  //   const lineHeight = 10;
-  //   const maxLineWidth = 180;
-
-  //   messages.forEach((msg) => {
-  //     if (msg.type === "text") {
-  //       const text = `${msg.sender === "user" ? "User" : "Bot"}: ${msg.content}`;
-
-  //       const lines = doc.splitTextToSize(text, maxLineWidth);
-  //       lines.forEach((line: string | string[]) => {
-  //         doc.text(line, 10, yOffset);
-  //         yOffset += lineHeight;
-  //       });
-
-  //       yOffset += lineHeight; // Add extra space between messages
-  //     }
-  //   });
-
-  //   doc.save("chat.pdf");
-  // };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -345,7 +332,7 @@ export default function ChatPage() {
               onClick={() => setTopicContext(topic.value)}
               className={`p-3 bg-white rounded-lg shadow-lg cursor-pointer transform hover:scale-105 hover:bg-green-300  transition-transform duration-300 ease-in-out 
               ${
-                topicContext === topic.value ? "border-2 border-blue-500 bg-green-300 md:border-blue-500 md:bg-green-300" : ""
+                topicContext === topic.value ? "border-4 border-blue-500 bg-green-300 md:border-blue-500 md:bg-green-300" : ""
               }`}
             >
               <div className="flex flex-col items-center">
@@ -402,9 +389,9 @@ export default function ChatPage() {
               <div
                 className={`${
                   msg.sender === "user"
-                    ? "bg-blue-500 text-white"
+                    ? "bg-blue-500 text-white p-4 h-max w-max"
                     : "bg-gray-100 text-black"
-                } p-2 rounded-sm ${
+                } p-2 rounded-full  ${
                   msg.sender === "user" ? "self-end" : "self-start"
                 }`}
               >
@@ -416,6 +403,15 @@ export default function ChatPage() {
                   <audio controls src={msg.content}></audio>
                 )}
               </div>
+              {msg.sender === "bot" && msg.type === "text" && (
+          <button
+            onClick={() => handleCopy(msg.content, index)}
+            className=" middle-2 right-50  text-blue-500 bg-white rounded-full p-1"
+          >
+            {copiedMessageIndex === index ? "Copied" : "Copy"}
+          </button>
+        )}
+
             </div>
           );
         })}

@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import localFont from "next/font/local";
 import Image from "next/image";
-import Footer from "@/components/footer";
+
 import { Textarea } from "@/components/ui/textarea";
 import { jsPDF } from "jspdf";
 import PulsatingButton from "@/components/magicui/pulsating-button";
@@ -317,7 +317,7 @@ export default function ChatPage() {
       className={`${geistSans.variable} ${geistMono.variable} flex flex-col items-center justify-between h-screen`}
     >
   
-  <header className="w-full h-15 md:h-25 flex items-center justify-between p-4 text-lg bg-card text-card-foreground">
+  <header className="w-full h-15 md:h-25 flex items-center justify-between p-4 text-lg bg-gray-500 text-card-foreground">
   <Image
     src={"/logo.png"}
     alt="Logo"
@@ -611,7 +611,7 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <Footer />
+
     </div>
   );
 }

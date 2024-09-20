@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 
 import "./globals.css";
 import { Providers } from './providers'
+import Footer from "@/components/footer";
 
-
+ 
 
 export const metadata: Metadata = {
   title: "AI Smartest Chat",
@@ -21,7 +22,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
     <body className="flex flex-col min-h-screen bg-background text-foreground">
-      <Providers>{children}</Providers>
+      <Providers>
+        {children}
+      <Footer />
+      </Providers>
     </body>
   </html>
   );

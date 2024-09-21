@@ -22,7 +22,18 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
+interface WindowWithSpeechRecognition  extends Window {
+  webkitSpeechRecognition?: typeof SpeechRecognition;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
 export default function ChatPage() {
+
+
+  
   const [messages, setMessages] = useState<
     { sender: "user" | "bot"; content: string; type: "text" | "audio" }[]
   >([]);
@@ -68,6 +79,303 @@ export default function ChatPage() {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event: BlobEvent) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/webm",
+        });
+        const newAudioUrl = URL.createObjectURL(audioBlob);
+
+        setMessages((prev) => [
+          ...prev,
+          { sender: "user", content: newAudioUrl, type: "audio" },
+        ]);
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+    }
+  };
+
+
+
+
+
+
+  const handleStopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+
+    if ('webkitSpeechRecognition' in window) {
+        const SpeechRecognition = (window as WindowWithSpeechRecognition ).webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+            const transcript = event.results[0][0].transcript;
+            console.log("Transcript:", transcript);
+
+            // Update message with the transcribed text
+            setMessage(transcript); // Set the transcribed text to the message state
+
+            // Add to messages as a "text" type
+            setMessages((prev) => [
+                ...prev,
+                { sender: "user", content: transcript, type: "text" },
+            ]);
+
+            // Call handleSendMessage after transcription
+            handleSendMessage();
+        };
+
+
+
+        recognition.start();
+    } else {
+        console.log('Speech recognition not supported in this browser.');
+    }
+};
+
+const handleSendMessage = async () => {
+    if (message.trim()) {
+        // The message is now set with the transcribed text in handleStopRecording
+        const textToSend = message.trim(); // Use the message state
+
+        setMessages((prev) => [
+            ...prev,
+            { sender: "user", content: textToSend, type: "text" },
+        ]);
+
+        setMessage(""); // Clear the message state
+
+        try {
+            const response = await fetch(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyAoMN85HNmohSDrBAS0YOIOXKE4khlSkxo",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: topicContext + textToSend }] }],
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("API request failed");
+            }
+
+            const data = await response.json();
+            const generatedText = data.candidates
+                .map((candidate: { content: { parts: [] } }) =>
+                    candidate.content.parts
+                        .map((part: { text: string }) => part.text)
+                        .join("")
+                )
+                .join("\n\n");
+
+            setMessages((prev) => [
+                ...prev,
+                { sender: "bot", content: "Typing...", type: "text" },
+            ]);
+
+            let typingIndex = 0;
+            const typingSpeed = 50;
+
+            const typeText = () => {
+                if (typingIndex < generatedText.length) {
+                    setMessages((prev) => {
+                        const updatedMessages = [...prev];
+                        const lastMessage = updatedMessages[updatedMessages.length - 1];
+                        updatedMessages[updatedMessages.length - 1] = {
+                            ...lastMessage,
+                            content: generatedText.slice(0, typingIndex + 1),
+                        };
+
+                        return updatedMessages;
+                    });
+
+                    typingIndex++;
+                    setTimeout(typeText, typingSpeed);
+                }
+            };
+
+            setTimeout(typeText, typingSpeed);
+        } catch (error) {
+            console.error("Error generating content:", error);
+            setMessages((prev) => [
+                ...prev,
+                {
+                    sender: "bot",
+                    content: "Failed to generate content.",
+                    type: "text",
+                },
+            ]);
+        }
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // const handleStopRecording = () => {
+  //   // Stop the media recorder
+  //   mediaRecorderRef.current?.stop();
+  //   setIsRecording(false);
+  
+  //   // Convert recorded audio to text using Web Speech API
+  //   if ('webkitSpeechRecognition' in window) {
+  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //     const SpeechRecognition = (window as any).webkitSpeechRecognition;
+  //     const recognition = new SpeechRecognition();
+  
+  //     recognition.continuous = false;
+  //     recognition.interimResults = false;
+  //     recognition.lang = 'en-US'; // Set language to English (adjust as needed)
+  
+  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //     recognition.onresult = (event: any) => {
+  //       const transcript = event.results[0][0].transcript;
+  //       console.log("Transcript:", transcript);
+  
+  //       // Update message with the transcribed text
+  //       setMessage(transcript);
+        
+  //       // Add to messages as a "text" type
+  //       setMessages((prev) => [
+  //         ...prev,
+  //         { sender: "user", content: transcript, type: "text" },
+  //       ]);
+  //     };
+  
+  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //     recognition.onerror = (event: any) => {
+  //       console.error('Speech recognition error:', event.error);
+  //     };
+  
+  //     // Start speech recognition after stopping recording
+  //     recognition.start();
+  //   } else {
+  //     console.log('Speech recognition not supported in this browser.');
+  //   }
+  // };
+
+
+
+
+  // const handleSendMessage = async () => {
+  //   if (message.trim()) {
+  //     setMessages((prev) => [
+  //       ...prev,
+  //       { sender: "user", content: message.trim(), type: "text" },
+  //     ]);
+
+  //     setMessage("");
+
+  //     try {
+  //       const response = await fetch(
+  //         "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyAoMN85HNmohSDrBAS0YOIOXKE4khlSkxo",
+  //         {
+  //           method: "POST",
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //           },
+  //           body: JSON.stringify({
+  //             contents: [{ parts: [{ text: topicContext + message.trim() }] }],
+  //           }),
+  //         }
+  //       );
+
+  //       if (!response.ok) {
+  //         throw new Error("API request failed");
+  //       }
+
+  //       const data = await response.json();
+  //       const generatedText = data.candidates
+  //         .map((candidate: { content: { parts: [] } }) =>
+  //           candidate.content.parts
+  //             .map((part: { text: string }) => part.text)
+  //             .join("")
+  //         )
+  //         .join("\n\n");
+
+  //       setMessages((prev) => [
+  //         ...prev,
+  //         { sender: "bot", content: "Typing...", type: "text" },
+  //       ]);
+
+  //       let typingIndex = 0;
+  //       const typingSpeed = 50;
+
+  //       const typeText = () => {
+  //         if (typingIndex < generatedText.length) {
+  //           setMessages((prev) => {
+  //             const updatedMessages = [...prev];
+  //             const lastMessage = updatedMessages[updatedMessages.length - 1];
+  //             updatedMessages[updatedMessages.length - 1] = {
+  //               ...lastMessage,
+  //               content: generatedText.slice(0, typingIndex + 1),
+  //             };
+
+  //             return updatedMessages;
+  //           });
+
+  //           typingIndex++;
+  //           setTimeout(typeText, typingSpeed);
+  //         }
+  //       };
+
+  //       setTimeout(typeText, typingSpeed);
+  //     } catch (error) {
+  //       console.error("Error generating content:", error);
+  //       setMessages((prev) => [
+  //         ...prev,
+  //         {
+  //           sender: "bot",
+  //           content: "Failed to generate content.",
+  //           type: "text",
+  //         },
+  //       ]);
+  //     }
+  //   }
+  // };
+
+
+
+
+
+
+
   const chatBoxRef = useRef<HTMLDivElement>(null);
 
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
@@ -108,164 +416,9 @@ export default function ChatPage() {
     }
   }, [messages]);
 
-  const handleStartRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
 
-      mediaRecorderRef.current.ondataavailable = (event: BlobEvent) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
-        const newAudioUrl = URL.createObjectURL(audioBlob);
-
-        setMessages((prev) => [
-          ...prev,
-          { sender: "user", content: newAudioUrl, type: "audio" },
-        ]);
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-    }
-  };
-
-  // const handleStopRecording = () => {
-  //   mediaRecorderRef.current?.stop();
-  //   setIsRecording(false);
-  //   setMessage("Recording stopped.");
-    
-  // };
-
-
-  const handleStopRecording = () => {
-    // Stop the media recorder
-    mediaRecorderRef.current?.stop();
-    setIsRecording(false);
-  
-    // Convert recorded audio to text using Web Speech API
-    if ('webkitSpeechRecognition' in window) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const SpeechRecognition = (window as any).webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-  
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US'; // Set language to English (adjust as needed)
-  
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        console.log("Transcript:", transcript);
-  
-        // Update message with the transcribed text
-        setMessage(transcript);
-        
-        // Add to messages as a "text" type
-        setMessages((prev) => [
-          ...prev,
-          { sender: "user", content: transcript, type: "text" },
-        ]);
-      };
-  
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-      };
-  
-      // Start speech recognition after stopping recording
-      recognition.start();
-    } else {
-      console.log('Speech recognition not supported in this browser.');
-    }
-  };
   
 
-  const handleSendMessage = async () => {
-    if (message.trim()) {
-      setMessages((prev) => [
-        ...prev,
-        { sender: "user", content: message.trim(), type: "text" },
-      ]);
-
-      setMessage("");
-
-      try {
-        const response = await fetch(
-          "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyAoMN85HNmohSDrBAS0YOIOXKE4khlSkxo",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: topicContext + message.trim() }] }],
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("API request failed");
-        }
-
-        const data = await response.json();
-        const generatedText = data.candidates
-          .map((candidate: { content: { parts: [] } }) =>
-            candidate.content.parts
-              .map((part: { text: string }) => part.text)
-              .join("")
-          )
-          .join("\n\n");
-
-        setMessages((prev) => [
-          ...prev,
-          { sender: "bot", content: "Typing...", type: "text" },
-        ]);
-
-        let typingIndex = 0;
-        const typingSpeed = 50;
-
-        const typeText = () => {
-          if (typingIndex < generatedText.length) {
-            setMessages((prev) => {
-              const updatedMessages = [...prev];
-              const lastMessage = updatedMessages[updatedMessages.length - 1];
-              updatedMessages[updatedMessages.length - 1] = {
-                ...lastMessage,
-                content: generatedText.slice(0, typingIndex + 1),
-              };
-
-              return updatedMessages;
-            });
-
-            typingIndex++;
-            setTimeout(typeText, typingSpeed);
-          }
-        };
-
-        setTimeout(typeText, typingSpeed);
-      } catch (error) {
-        console.error("Error generating content:", error);
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "bot",
-            content: "Failed to generate content.",
-            type: "text",
-          },
-        ]);
-      }
-    }
-  };
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
@@ -354,7 +507,7 @@ export default function ChatPage() {
   </div>
 </header>
 
-      {/* <div
+      <div
         className="flex-1 w-full h-full p-4 overflow-y-auto bg-gray-100"
         ref={chatBoxRef}
         style={{ height: "calc(100vh - 150px)" }}
@@ -385,24 +538,24 @@ export default function ChatPage() {
               <div
                 className={`${
                   msg.sender === "user"
-                    ? "bg-blue-500 text-white p-4 h-max w-max"
+                    ? "bg-gray-100 text-black p-3 h-max w-max"
                     : "bg-gray-100 text-black"
                 } p-2 rounded-full  ${
                   msg.sender === "user" ? "self-end" : "self-start"
                 }`}
               >
                 {msg.type === "text" ? (
-                  <p className="whitespace-pre-wrap leading-relaxed">
+                  <p className="whitespace-pre-wrap leading-relaxed ">
                     {msg.content}
                   </p>
                 ) : (
-                  <audio controls src={msg.content}></audio>
+                  <audio className="bg-black border-6 p-1 rounded-full" controls src={msg.content}></audio>
                 )}
               </div>
               {msg.sender === "bot" && msg.type === "text" && (
           <button
             onClick={() => handleCopy(msg.content, index)}
-            className=" middle-2 right-50  text-blue-500 bg-white rounded-full p-1"
+            className=" middle-2 right-50  text-black-500 hover:bg-gray-400 bg-gray-200 border-2 border-black w-20 rounded-full p-1"
           >
             {copiedMessageIndex === index ? "Copied" : "Copy"}
           </button>
@@ -411,63 +564,9 @@ export default function ChatPage() {
             </div>
           );
         })}
-      </div> */}
-
-<div
-  className="flex-1 w-full h-full p-4 overflow-y-auto bg-transparent text-black"
-  ref={chatBoxRef}
-  style={{ height: "calc(100vh - 150px)" }}
->
-  {messages.map((msg, index) => {
-    const isFirstBotMessage =
-      msg.sender === "bot" &&
-      (index === 0 || messages[index - 1].sender !== "bot");
-
-    return (
-      <div
-        key={index}
-        className={`w-full my-3 flex ${
-          msg.sender === "user" ? "justify-end" : "justify-start"
-        } items-center`}
-      >
-        {isFirstBotMessage && (
-          <div>
-            <Image
-              src="/logo.png"
-              alt="Logo"
-              width={40}
-              height={40}
-              className="rounded-md"
-            />
-          </div>
-        )}
-        <div
-          className={`p-2 rounded-full ${
-            msg.sender === "user"
-              ? "bg-primary text-primary-foreground"
-              : "bg-card text-card-foreground"
-          }`}
-        >
-          {msg.type === "text" ? (
-            <p className="whitespace-pre-wrap leading-relaxed">
-              {msg.content}
-            </p>
-          ) : (
-            <audio controls src={msg.content}></audio>
-          )}
-        </div>
-        {msg.sender === "bot" && msg.type === "text" && (
-          <button
-            onClick={() => handleCopy(msg.content, index)}
-            className="middle-2 right-50 text-black bg-green-300 rounded-md p-1"
-          >
-            {copiedMessageIndex === index ? "Copied" : "Copy"}
-          </button>
-        )}
       </div>
-    );
-  })}
-</div>
+
+
 
     
 

@@ -32,6 +32,9 @@ const geistMono = localFont({
 
 export default function ChatPage() {
 
+  const [language, setLanguage] = useState("en-US");
+
+
 
   
   const [messages, setMessages] = useState<
@@ -92,7 +95,7 @@ export default function ChatPage() {
           
               recognition.continuous = false;
               recognition.interimResults = false;
-              recognition.lang = 'fr-FR'; // Set language to English (adjust as needed)
+              recognition.lang = language; // Set language to English (adjust as needed)
           
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               recognition.onresult = (event: any) => {
@@ -553,7 +556,7 @@ const handleSendMessage = async () => {
                   msg.sender === "user"
                     ? "bg-black text-white p-1 h-max w-max"
                     : "bg-gray-100 text-black"
-                } p-2 rounded-full  ${
+                } p-2 rounded-md  ${
                   msg.sender === "user" ? "self-end" : "self-start"
                 }`}
               >
@@ -649,6 +652,14 @@ const handleSendMessage = async () => {
                 <path d="m68.265625 216.601562h408v21.332032h-408zm0 0" />
               </svg>
             </button>
+
+            <select onChange={(e) => setLanguage(e.target.value)} value={language} className="mb-4 lg:mb-0 lg:mr-4">
+            <option value="en-US">English</option>
+            <option value="fr-FR">French</option>
+            <option value="es-ES">Spanish</option>
+            <option value="ja-JP">Japanese</option>
+            <option value="ar-AE">Arabic</option>
+          </select>
 
             <PulsatingButton
               type="button"

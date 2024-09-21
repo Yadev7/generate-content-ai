@@ -22,13 +22,13 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-interface WindowWithSpeechRecognition  extends Window {
-  webkitSpeechRecognition?: typeof SpeechRecognition;
-}
+// interface WindowWithSpeechRecognition extends Window {
+//   webkitSpeechRecognition?: typeof SpeechRecognition;
+// }
 
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
-}
+// interface SpeechRecognitionEvent extends Event {
+//   results: SpeechRecognitionResultList;
+// }
 
 export default function ChatPage() {
 
@@ -80,77 +80,132 @@ export default function ChatPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
+
+
   const handleStartRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
+    setIsRecording(true);
+            // Convert recorded audio to text using Web Speech API
+            if ('webkitSpeechRecognition' in window) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const SpeechRecognition = (window as any).webkitSpeechRecognition;
+              const recognition = new SpeechRecognition();
+          
+              recognition.continuous = false;
+              recognition.interimResults = false;
+              recognition.lang = 'fr-FR'; // Set language to English (adjust as needed)
+          
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              recognition.onresult = (event: any) => {
+                const transcript = event.results[0][0].transcript;
+                console.log("Transcript:", transcript);
+          
+                // Update message with the transcribed text
+                setMessage(transcript);
+                
+                
+                // Add to messages as a "text" type
+                // setMessages((prev) => [
+                //   ...prev,
+                //   { sender: "user", content: transcript, type: "text" },
+                // ]);
 
-      mediaRecorderRef.current.ondataavailable = (event: BlobEvent) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
+               
+              };
+          
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              recognition.onerror = (event: any) => {
+                console.error('Speech recognition error:', event.error);
+              };
+              
+          
+              // Start speech recognition after stopping recording
+              recognition.start();
+            } else {
+              console.log('Speech recognition not supported in this browser.');
+            }
 
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
-        const newAudioUrl = URL.createObjectURL(audioBlob);
+    // try {
+    //   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    //   mediaRecorderRef.current = new MediaRecorder(stream);
+    //   audioChunksRef.current = [];
 
-        setMessages((prev) => [
-          ...prev,
-          { sender: "user", content: newAudioUrl, type: "audio" },
-        ]);
-      };
+    //   mediaRecorderRef.current.ondataavailable = (event: BlobEvent) => {
+    //     if (event.data.size > 0) {
+    //       audioChunksRef.current.push(event.data);
+    //     }
+    //   };
 
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-    }
+    //   mediaRecorderRef.current.onstop = () => {
+    //     const audioBlob = new Blob(audioChunksRef.current, {
+    //       type: "audio/webm",
+    //     });
+    //     const newAudioUrl = URL.createObjectURL(audioBlob);
+
+    //     setMessages((prev) => [
+    //       ...prev,
+    //       { sender: "user", content: newAudioUrl, type: "audio" },
+    //     ]);
+    //   };
+
+    //   mediaRecorderRef.current.start();
+    //   setIsRecording(true);
+    // } catch (error) {
+    //   console.error("Error accessing microphone:", error);
+    // }
+  };
+
+
+  
+  const handleStopRecording = () => {
+    // Stop the media recorder
+    setIsRecording(false);
+    
   };
 
 
 
 
 
+//   const handleStopRecording = () => {
+//     mediaRecorderRef.current?.stop();
+//     setIsRecording(false);
 
-  const handleStopRecording = () => {
-    mediaRecorderRef.current?.stop();
-    setIsRecording(false);
+//     if ('webkitSpeechRecognition' in window) {
+//         const SpeechRecognition = (window as WindowWithSpeechRecognition ).webkitSpeechRecognition;
+//         const recognition = new SpeechRecognition();
+//         recognition.continuous = false;
+//         recognition.interimResults = false;
+//         recognition.lang = 'ar-SA';
+//         recognition.onstart = () => {
+//             console.log('Speech recognition started.');
+//         };
 
-    if ('webkitSpeechRecognition' in window) {
-        const SpeechRecognition = (window as WindowWithSpeechRecognition ).webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
+        
 
-        recognition.onresult = (event: SpeechRecognitionEvent) => {
-            const transcript = event.results[0][0].transcript;
-            console.log("Transcript:", transcript);
+//         recognition.onresult = (event: SpeechRecognitionEvent) => {
+//             const transcript = event.results[0][0].transcript;
+//             console.log("Transcript:", transcript);
 
-            // Update message with the transcribed text
-            setMessage(transcript); // Set the transcribed text to the message state
+//             // Update message with the transcribed text
+//             setMessage(transcript); // Set the transcribed text to the message state
 
-            // Add to messages as a "text" type
-            setMessages((prev) => [
-                ...prev,
-                { sender: "user", content: transcript, type: "text" },
-            ]);
+//             // Add to messages as a "text" type
+//             setMessages((prev) => [
+//                 ...prev,
+//                 { sender: "user", content: transcript, type: "text" },
+//             ]);
 
-            // Call handleSendMessage after transcription
-            handleSendMessage();
-        };
+//             // Call handleSendMessage after transcription
+//             handleSendMessage();
+//         };
 
 
 
-        recognition.start();
-    } else {
-        console.log('Speech recognition not supported in this browser.');
-    }
-};
+//         recognition.start();
+//     } else {
+//         console.log('Speech recognition not supported in this browser.');
+//     }
+// };
 
 const handleSendMessage = async () => {
     if (message.trim()) {
@@ -247,48 +302,6 @@ const handleSendMessage = async () => {
 
 
 
-
-  // const handleStopRecording = () => {
-  //   // Stop the media recorder
-  //   mediaRecorderRef.current?.stop();
-  //   setIsRecording(false);
-  
-  //   // Convert recorded audio to text using Web Speech API
-  //   if ('webkitSpeechRecognition' in window) {
-  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //     const SpeechRecognition = (window as any).webkitSpeechRecognition;
-  //     const recognition = new SpeechRecognition();
-  
-  //     recognition.continuous = false;
-  //     recognition.interimResults = false;
-  //     recognition.lang = 'en-US'; // Set language to English (adjust as needed)
-  
-  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //     recognition.onresult = (event: any) => {
-  //       const transcript = event.results[0][0].transcript;
-  //       console.log("Transcript:", transcript);
-  
-  //       // Update message with the transcribed text
-  //       setMessage(transcript);
-        
-  //       // Add to messages as a "text" type
-  //       setMessages((prev) => [
-  //         ...prev,
-  //         { sender: "user", content: transcript, type: "text" },
-  //       ]);
-  //     };
-  
-  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //     recognition.onerror = (event: any) => {
-  //       console.error('Speech recognition error:', event.error);
-  //     };
-  
-  //     // Start speech recognition after stopping recording
-  //     recognition.start();
-  //   } else {
-  //     console.log('Speech recognition not supported in this browser.');
-  //   }
-  // };
 
 
 
@@ -508,7 +521,7 @@ const handleSendMessage = async () => {
 </header>
 
       <div
-        className="flex-1 w-full h-full p-4 overflow-y-auto bg-gray-100"
+        className="flex-1 w-full h-full p-4 overflow-y-auto "
         ref={chatBoxRef}
         style={{ height: "calc(100vh - 150px)" }}
       >
@@ -538,7 +551,7 @@ const handleSendMessage = async () => {
               <div
                 className={`${
                   msg.sender === "user"
-                    ? "bg-gray-100 text-black p-3 h-max w-max"
+                    ? "bg-black text-white p-1 h-max w-max"
                     : "bg-gray-100 text-black"
                 } p-2 rounded-full  ${
                   msg.sender === "user" ? "self-end" : "self-start"

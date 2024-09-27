@@ -22,13 +22,7 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-// interface WindowWithSpeechRecognition extends Window {
-//   webkitSpeechRecognition?: typeof SpeechRecognition;
-// }
 
-// interface SpeechRecognitionEvent extends Event {
-//   results: SpeechRecognitionResultList;
-// }
 
 export default function ChatPage() {
 
@@ -38,7 +32,7 @@ export default function ChatPage() {
 
   
   const [messages, setMessages] = useState<
-    { sender: "user" | "bot"; content: string; type: "text" | "audio" }[]
+    { sender: "user" | "bot"; content: string; type: "text" | "audio" | "image" }[]
   >([]);
   const [message, setMessage] = useState("");
   const [topicContext, setTopicContext] = useState("");
@@ -106,11 +100,7 @@ export default function ChatPage() {
                 setMessage(transcript);
                 
                 
-                // Add to messages as a "text" type
-                // setMessages((prev) => [
-                //   ...prev,
-                //   { sender: "user", content: transcript, type: "text" },
-                // ]);
+               
 
                
               };
@@ -127,34 +117,6 @@ export default function ChatPage() {
               console.log('Speech recognition not supported in this browser.');
             }
 
-    // try {
-    //   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    //   mediaRecorderRef.current = new MediaRecorder(stream);
-    //   audioChunksRef.current = [];
-
-    //   mediaRecorderRef.current.ondataavailable = (event: BlobEvent) => {
-    //     if (event.data.size > 0) {
-    //       audioChunksRef.current.push(event.data);
-    //     }
-    //   };
-
-    //   mediaRecorderRef.current.onstop = () => {
-    //     const audioBlob = new Blob(audioChunksRef.current, {
-    //       type: "audio/webm",
-    //     });
-    //     const newAudioUrl = URL.createObjectURL(audioBlob);
-
-    //     setMessages((prev) => [
-    //       ...prev,
-    //       { sender: "user", content: newAudioUrl, type: "audio" },
-    //     ]);
-    //   };
-
-    //   mediaRecorderRef.current.start();
-    //   setIsRecording(true);
-    // } catch (error) {
-    //   console.error("Error accessing microphone:", error);
-    // }
   };
 
 
@@ -165,50 +127,6 @@ export default function ChatPage() {
     
   };
 
-
-
-
-
-//   const handleStopRecording = () => {
-//     mediaRecorderRef.current?.stop();
-//     setIsRecording(false);
-
-//     if ('webkitSpeechRecognition' in window) {
-//         const SpeechRecognition = (window as WindowWithSpeechRecognition ).webkitSpeechRecognition;
-//         const recognition = new SpeechRecognition();
-//         recognition.continuous = false;
-//         recognition.interimResults = false;
-//         recognition.lang = 'ar-SA';
-//         recognition.onstart = () => {
-//             console.log('Speech recognition started.');
-//         };
-
-        
-
-//         recognition.onresult = (event: SpeechRecognitionEvent) => {
-//             const transcript = event.results[0][0].transcript;
-//             console.log("Transcript:", transcript);
-
-//             // Update message with the transcribed text
-//             setMessage(transcript); // Set the transcribed text to the message state
-
-//             // Add to messages as a "text" type
-//             setMessages((prev) => [
-//                 ...prev,
-//                 { sender: "user", content: transcript, type: "text" },
-//             ]);
-
-//             // Call handleSendMessage after transcription
-//             handleSendMessage();
-//         };
-
-
-
-//         recognition.start();
-//     } else {
-//         console.log('Speech recognition not supported in this browser.');
-//     }
-// };
 
 const handleSendMessage = async () => {
     if (message.trim()) {
@@ -221,6 +139,8 @@ const handleSendMessage = async () => {
         ]);
 
         setMessage(""); // Clear the message state
+
+  
 
         try {
             const response = await fetch(
@@ -239,6 +159,7 @@ const handleSendMessage = async () => {
             if (!response.ok) {
                 throw new Error("API request failed");
             }
+
 
             const data = await response.json();
             const generatedText = data.candidates
@@ -276,6 +197,7 @@ const handleSendMessage = async () => {
             };
 
             setTimeout(typeText, typingSpeed);
+            
         } catch (error) {
             console.error("Error generating content:", error);
             setMessages((prev) => [
@@ -287,110 +209,36 @@ const handleSendMessage = async () => {
                 },
             ]);
         }
+
+
+      //   try {
+      //     const imageResponse = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(textToSend)}&client_id=7glxumuBjc35kt2JA5j0oT2wCPDtKWoGXVvbR0jYuKg`);
+      //     const imageData = await imageResponse.json();
+      //     const imageUrl = imageData.results.length > 0 ? imageData.results[0].urls.small : null; 
+
+      //   if (!imageUrl) {
+      //       throw new Error("No image found");
+      //   }
+
+      //   setMessages((prev) => [
+      //     ...prev,
+      //     { sender: "bot", content: imageUrl, type: "image" },
+      // ]);
+      //   console.log("Image URL:", imageUrl);
+      //   } catch (error) {
+      //       console.error("Error generating image:", error);
+      //       setMessages((prev) => [
+      //           ...prev,
+      //           {
+      //               sender: "bot",
+      //               content: "Failed to generate image.",
+      //               type: "text",
+      //           },
+      //       ]);
+      //   }
+
     }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // const handleSendMessage = async () => {
-  //   if (message.trim()) {
-  //     setMessages((prev) => [
-  //       ...prev,
-  //       { sender: "user", content: message.trim(), type: "text" },
-  //     ]);
-
-  //     setMessage("");
-
-  //     try {
-  //       const response = await fetch(
-  //         "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyAoMN85HNmohSDrBAS0YOIOXKE4khlSkxo",
-  //         {
-  //           method: "POST",
-  //           headers: {
-  //             "Content-Type": "application/json",
-  //           },
-  //           body: JSON.stringify({
-  //             contents: [{ parts: [{ text: topicContext + message.trim() }] }],
-  //           }),
-  //         }
-  //       );
-
-  //       if (!response.ok) {
-  //         throw new Error("API request failed");
-  //       }
-
-  //       const data = await response.json();
-  //       const generatedText = data.candidates
-  //         .map((candidate: { content: { parts: [] } }) =>
-  //           candidate.content.parts
-  //             .map((part: { text: string }) => part.text)
-  //             .join("")
-  //         )
-  //         .join("\n\n");
-
-  //       setMessages((prev) => [
-  //         ...prev,
-  //         { sender: "bot", content: "Typing...", type: "text" },
-  //       ]);
-
-  //       let typingIndex = 0;
-  //       const typingSpeed = 50;
-
-  //       const typeText = () => {
-  //         if (typingIndex < generatedText.length) {
-  //           setMessages((prev) => {
-  //             const updatedMessages = [...prev];
-  //             const lastMessage = updatedMessages[updatedMessages.length - 1];
-  //             updatedMessages[updatedMessages.length - 1] = {
-  //               ...lastMessage,
-  //               content: generatedText.slice(0, typingIndex + 1),
-  //             };
-
-  //             return updatedMessages;
-  //           });
-
-  //           typingIndex++;
-  //           setTimeout(typeText, typingSpeed);
-  //         }
-  //       };
-
-  //       setTimeout(typeText, typingSpeed);
-  //     } catch (error) {
-  //       console.error("Error generating content:", error);
-  //       setMessages((prev) => [
-  //         ...prev,
-  //         {
-  //           sender: "bot",
-  //           content: "Failed to generate content.",
-  //           type: "text",
-  //         },
-  //       ]);
-  //     }
-  //   }
-  // };
-
-
-
-
-
-
 
   const chatBoxRef = useRef<HTMLDivElement>(null);
 
@@ -433,9 +281,6 @@ const handleSendMessage = async () => {
   }, [messages]);
 
 
-  
-
-
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
     let yOffset = 10; // Starting y position
@@ -470,9 +315,6 @@ const handleSendMessage = async () => {
     // Save the generated PDF file
     doc.save("chat.pdf");
   };
-
-
-
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -523,69 +365,79 @@ const handleSendMessage = async () => {
   </div>
 </header>
 
-      <div
-        className="flex-1 w-full h-full p-4 overflow-y-auto "
-        ref={chatBoxRef}
-        style={{ height: "calc(100vh - 150px)" }}
-      >
-        {messages.map((msg, index) => {
-          const isFirstBotMessage =
-            msg.sender === "bot" &&
-            (index === 0 || messages[index - 1].sender !== "bot");
+<div
+  className="flex-1 w-full h-full p-4 overflow-y-auto"
+  ref={chatBoxRef}
+  style={{ height: "calc(100vh - 150px)" }}
+>
+  {messages.map((msg, index) => {
+    const isFirstBotMessage =
+      msg.sender === "bot" &&
+      (index === 0 || messages[index - 1].sender !== "bot");
 
-          return (
-            <div
-              key={index}
-              className={`w-full my-3 flex ${
-                msg.sender === "user" ? "justify-end" : "justify-start"
-              } items-center`}
-            >
-              {isFirstBotMessage && (
-                <div>
-                  <Image
-                    src="/logo.png"
-                    alt="Logo"
-                    width={40}
-                    height={40}
-                    className="rounded-full"
-                  />
-                </div>
-              )}
-              <div
-                className={`${
-                  msg.sender === "user"
-                    ? "bg-black text-white p-1 h-max w-max"
-                    : "bg-gray-100 text-black"
-                } p-2 rounded-md  ${
-                  msg.sender === "user" ? "self-end" : "self-start"
-                }`}
-              >
-                {msg.type === "text" ? (
-                  <p className="whitespace-pre-wrap leading-relaxed ">
-                    {msg.content}
-                  </p>
-                ) : (
-                  <audio className="bg-black border-6 p-1 rounded-full" controls src={msg.content}></audio>
-                )}
-              </div>
-              {msg.sender === "bot" && msg.type === "text" && (
+    return (
+      <div
+        key={index}
+        className={`w-full my-3 flex ${
+          msg.sender === "user" ? "justify-end" : "justify-start"
+        } items-center`}
+      >
+        {isFirstBotMessage && (
+          <div>
+            <Image
+              src="/logo.png"
+              alt="Logo"
+              width={40}
+              height={40}
+              className="rounded-full"
+            />
+          </div>
+        )}
+
+        <div
+          className={`${
+            msg.sender === "user"
+              ? "bg-gray-700 text-white p-1 h-max w-max"
+              : "bg-gray-100 text-black"
+          } p-2 rounded-md  ${
+            msg.sender === "user" ? "self-end" : "self-start"
+          }`}
+        >
+          {/* Render content based on message type */}
+          {msg.type === "text" ? (
+            <p className="whitespace-pre-wrap leading-relaxed ">
+              {msg.content}
+            </p>
+          ) : msg.type === "audio" ? (
+            <audio
+              className="bg-black border-6 p-1 rounded-full"
+              controls
+              src={msg.content}
+            ></audio>
+          ) : msg.type === "image" ? (
+            <Image
+              src={msg.content}
+              alt="Image"
+              width={200}
+              height={200}
+              className="rounded-md"
+            />
+          ) : null}
+        </div>
+
+        {/* Copy button for bot messages */}
+        {msg.sender === "bot" && msg.type === "text" && (
           <button
             onClick={() => handleCopy(msg.content, index)}
-            className=" middle-2 right-50  text-black-500 hover:bg-gray-400 bg-gray-200 border-2 border-black w-20 rounded-full p-1"
+            className="middle-2 right-50 text-black-500 hover:bg-gray-400 bg-gray-500 border-2 border-black w-20 rounded-full p-1"
           >
             {copiedMessageIndex === index ? "Copied" : "Copy"}
           </button>
         )}
-
-            </div>
-          );
-        })}
       </div>
-
-
-
-    
-
+    );
+  })}
+</div>
       <div className="w-full p-4 bg-gray-200 mb-5">
         <span className="mb-10 text-md font-bold text-blue-600">
           {topicContext}
@@ -653,13 +505,26 @@ const handleSendMessage = async () => {
               </svg>
             </button>
 
-            <select onChange={(e) => setLanguage(e.target.value)} value={language} className="mb-4 lg:mb-0 lg:mr-4">
+        {/* <select onChange={(e) => setLanguage(e.target.value)} value={language} className="mb-4 lg:mb-0 lg:mr-4">
             <option value="en-US">English</option>
             <option value="fr-FR">French</option>
             <option value="es-ES">Spanish</option>
             <option value="ja-JP">Japanese</option>
             <option value="ar-AE">Arabic</option>
-          </select>
+        </select> */}
+
+<select
+  onChange={(e) => setLanguage(e.target.value)}
+  value={language}
+  className="mb-4 lg:mb-0 lg:mr-4 w-full lg:w-auto bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300"
+>
+  <option value="en-US">English</option>
+  <option value="fr-FR">French</option>
+  <option value="es-ES">Spanish</option>
+  <option value="ja-JP">Japanese</option>
+  <option value="ar-AE">Arabic</option>
+</select>
+
 
             <PulsatingButton
               type="button"

@@ -274,11 +274,29 @@ const handleSendMessage = async () => {
     window.location.reload();
   };
 
+  // useEffect(() => {
+  //   if (chatBoxRef.current) {
+  //     chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+  //   }
+  // }, [messages]);
+
   useEffect(() => {
-    if (chatBoxRef.current) {
-      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    const chatBox = chatBoxRef.current;
+    
+    if (chatBox) {
+      const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 100;
+      
+      if (isNearBottom) {
+        // Only scroll to bottom if the user is near the bottom
+        // chatBox.scrollTop = chatBox.scrollHeight;
+        // Scroll to bottom using button scroll in mouseover
+        chatBox.onmouseover = () => {
+          chatBox.scrollTop = chatBox.scrollHeight;
+        };
+      }
     }
-  }, [messages]);
+  }, [messages]); // Trigger this when messages change
+  
 
 
   const handleDownloadPDF = () => {
@@ -513,17 +531,7 @@ const handleSendMessage = async () => {
             <option value="ar-AE">Arabic</option>
         </select> */}
 
-<select
-  onChange={(e) => setLanguage(e.target.value)}
-  value={language}
-  className="mb-4 lg:mb-0 lg:mr-4 w-full lg:w-auto bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300"
->
-  <option value="en-US">English</option>
-  <option value="fr-FR">French</option>
-  <option value="es-ES">Spanish</option>
-  <option value="ja-JP">Japanese</option>
-  <option value="ar-AE">Arabic</option>
-</select>
+
 
 
             <PulsatingButton
@@ -596,6 +604,17 @@ const handleSendMessage = async () => {
             </button>
 
           </div>
+          <select
+  onChange={(e) => setLanguage(e.target.value)}
+  value={language}
+  className=" mt-5 lg:mb-5 lg:mr-4 lg:ml-3 w-full lg:w-auto bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300"
+>
+  <option value="en-US">English</option>
+  <option value="fr-FR">French</option>
+  <option value="es-ES">Spanish</option>
+  <option value="ja-JP">Japanese</option>
+  <option value="ar-AE">Arabic</option>
+</select>
         </div>
       </div>
 

@@ -66,6 +66,10 @@ const config = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		keyframes: {
+			'dot-blink': {
+				'0%': { opacity: '0' },
+				'100%': { opacity: '1' },
+			  },
   			'accordion-down': {
   				from: {
   					height: '0'
@@ -111,6 +115,7 @@ const config = {
   			}
   		},
   		animation: {
+			'dot-blink': 'dot-blink 0.5s infinite alternate',
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			pulse: 'pulse var(--duration) ease-out infinite',

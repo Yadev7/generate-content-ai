@@ -595,6 +595,22 @@
 //   );
 // }
 
+
+"use client";
+
+import LoadingDots from "@/components/LoadingDots";
+
+
+
+
+export default function Home() {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center py-2">
 <div>
-  ChatBot is coming soon! with more features !!
+  <h1 className="flex justify-center items-center min-h-screen text-3xl font-bold">
+    Chatbot is under upgrading process <LoadingDots />
+  </h1>
 </div>
+    </main>
+  );
+}

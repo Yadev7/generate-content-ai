@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from './providers'
 import Footer from "@/components/footer";
-
+import { ClerkProvider } from "@clerk/nextjs";
 
  
 
@@ -22,10 +22,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+<ClerkProvider>
     <html lang="en" suppressHydrationWarning>
-      
     <body className="flex flex-col min-h-screen bg-background text-foreground">
- <h1>Clerk</h1>
       <Providers>
         {children}
         
@@ -33,5 +32,6 @@ export default function RootLayout({
       </Providers>
     </body>
   </html>
+  </ClerkProvider>
   );
 }

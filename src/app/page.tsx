@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import localFont from "next/font/local";
 import Image from "next/image";
+import { ClerkLoaded, ClerkLoading, SignedIn,  SignUpButton, SignedOut, SignInButton } from "@clerk/nextjs";
 
 import { Textarea } from "@/components/ui/textarea";
 import { jsPDF } from "jspdf";
@@ -16,6 +17,11 @@ import {
   FaBook,
 } from "react-icons/fa"; // Example icons
 import ThemeSwitch from "@/components/ThemeSwitch";
+
+const LM_STUDIO_BASE_URL =
+  process.env.NEXT_PUBLIC_LM_STUDIO_URL || "http://localhost:1234/v1";
+const LM_STUDIO_API_KEY = process.env.NEXT_PUBLIC_LM_STUDIO_API_KEY || "lm-studio";
+const LM_STUDIO_MODEL = process.env.NEXT_PUBLIC_LM_STUDIO_MODEL || "";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -40,7 +46,7 @@ export default function ChatPage() {
     }[]
   >([]);
   const [message, setMessage] = useState("");
-  const [topicContext, setTopicContext] = useState("");
+  const [topicContext, setTopicContext] = useState("Act as a general helpful assistant.");
 
   const topics = [
     {
@@ -119,113 +125,85 @@ export default function ChatPage() {
     setIsRecording(false);
   };
 
-  const handleSendMessage = async () => {
-    if (message.trim()) {
-      // The message is now set with the transcribed text in handleStopRecording
-      const textToSend = message.trim(); // Use the message state
+const handleSendMessage = async () => {
+  if (!message.trim()) return;
 
-      setMessages((prev) => [
-        ...prev,
-        { sender: "user", content: textToSend, type: "text" },
-      ]);
+  const textToSend = message.trim();
+  
+  // Update UI immediately
+  setMessages((prev) => [...prev, { sender: "user", content: textToSend, type: "text" }]);
+  setMessage("");
 
-      setMessage(""); // Clear the message state
-
-      try {
-        const response = await fetch(
-          "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyAoMN85HNmohSDrBAS0YOIOXKE4khlSkxo",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
+  try {
+    const response = await fetch(
+      `${LM_STUDIO_BASE_URL}/chat/completions`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${LM_STUDIO_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: LM_STUDIO_MODEL,
+          messages: [
+            {
+              role: "system",
+              content:
+                topicContext || "Act as a general helpful assistant.",
             },
-
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: topicContext + textToSend }] }],
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("API request failed");
-        }
-
-        const data = await response.json();
-        const generatedText = data.candidates
-          .slice(0, 1)
-          .map((candidate: { content: { parts: [] } }) =>
-            candidate.content.parts
-              .map((part: { text: string }) => part.text)
-              .join("")
-          )
-          .join("\n\n");
-
-        setMessages((prev) => [
-          ...prev,
-          { sender: "bot", content: "Typing...", type: "text" },
-        ]);
-
-        let typingIndex = 0;
-        const typingSpeed = 10;
-
-        const typeText = () => {
-          if (typingIndex < generatedText.length) {
-            setMessages((prev) => {
-              const updatedMessages = [...prev];
-              const lastMessage = updatedMessages[updatedMessages.length - 1];
-              updatedMessages[updatedMessages.length - 1] = {
-                ...lastMessage,
-                content: generatedText.slice(0, typingIndex + 1),
-              };
-
-              return updatedMessages;
-            });
-
-            typingIndex++;
-            setTimeout(typeText, typingSpeed);
-          }
-        };
-
-        setTimeout(typeText, typingSpeed);
-      } catch (error) {
-        console.error("Error generating content:", error);
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "bot",
-            content: "Failed to generate content.",
-            type: "text",
-          },
-        ]);
+            { role: "user", content: textToSend },
+          ],
+          stream: false,
+        }),
       }
+    );
 
-      //   try {
-      //     const imageResponse = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(textToSend)}&client_id=7glxumuBjc35kt2JA5j0oT2wCPDtKWoGXVvbR0jYuKg`);
-      //     const imageData = await imageResponse.json();
-      //     const imageUrl = imageData.results.length > 0 ? imageData.results[0].urls.small : null;
-
-      //   if (!imageUrl) {
-      //       throw new Error("No image found");
-      //   }
-
-      //   setMessages((prev) => [
-      //     ...prev,
-      //     { sender: "bot", content: imageUrl, type: "image" },
-      // ]);
-      //   console.log("Image URL:", imageUrl);
-      //   } catch (error) {
-      //       console.error("Error generating image:", error);
-      //       setMessages((prev) => [
-      //           ...prev,
-      //           {
-      //               sender: "bot",
-      //               content: "Failed to generate image.",
-      //               type: "text",
-      //           },
-      //       ]);
-      //   }
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => null);
+      console.error("API Error Detail:", errorBody);
+      throw new Error(errorBody?.error?.message || "API request failed");
     }
-  };
+
+    const data = await response.json();
+
+    const generatedText = data.choices?.[0]?.message?.content;
+
+    if (!generatedText) {
+      throw new Error("No response generated by AI.");
+    }
+
+    // Start typing effect
+    setMessages((prev) => [...prev, { sender: "bot", content: "", type: "text" }]);
+
+    let typingIndex = 0;
+    const typingSpeed = 10;
+
+    const typeText = () => {
+      if (typingIndex < generatedText.length) {
+        setMessages((prev) => {
+          const updatedMessages = [...prev];
+          const lastIndex = updatedMessages.length - 1;
+          updatedMessages[lastIndex] = {
+            ...updatedMessages[lastIndex],
+            content: generatedText.slice(0, typingIndex + 1),
+          };
+          return updatedMessages;
+        });
+        typingIndex++;
+        setTimeout(typeText, typingSpeed);
+      }
+    };
+
+    typeText();
+
+  } catch (error: any) {
+    console.error("Detailed Error:", error);
+    setMessages((prev) => [
+      ...prev,
+      { sender: "bot", content: `Error: ${error.message}`, type: "text" },
+    ]);
+  }
+};
 
   const chatBoxRef = useRef<HTMLDivElement>(null);
 

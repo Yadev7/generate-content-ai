@@ -3,21 +3,23 @@
 import Image from "next/image";
 import { ArrowUp } from "lucide-react";
 
-import type { Persona } from "@/lib/chat";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import type { PersonaCopy } from "@/lib/i18n/personas";
 
 interface EmptyStateProps {
-  activePersona?: Persona;
+  activePersonaCopy?: PersonaCopy;
   onPickSuggestion: (text: string) => void;
 }
 
-export default function EmptyState({ activePersona, onPickSuggestion }: EmptyStateProps) {
-  const suggestions = activePersona
-    ? [activePersona.suggestion]
-    : [
-        "Explain the difference between a process and a thread.",
-        "Write a TypeScript function that debounces an async callback.",
-        "Give me a 15-minute stretching routine for lower back stiffness.",
-      ];
+export default function EmptyState({
+  activePersonaCopy,
+  onPickSuggestion,
+}: EmptyStateProps) {
+  const { t } = useI18n();
+
+  const suggestions = activePersonaCopy
+    ? [activePersonaCopy.suggestion]
+    : t.empty.fallbackSuggestions;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 py-12">
@@ -26,12 +28,12 @@ export default function EmptyState({ activePersona, onPickSuggestion }: EmptySta
       </div>
 
       <h1 className="mt-5 text-center text-2xl font-semibold tracking-tight">
-        {activePersona ? `${activePersona.label} assistant` : "How can I help you today?"}
+        {activePersonaCopy
+          ? `${activePersonaCopy.label} ${t.empty.personaGreeting}`
+          : t.empty.greeting}
       </h1>
       <p className="mt-2 max-w-md text-center text-sm leading-relaxed text-muted-foreground">
-        {activePersona
-          ? activePersona.description
-          : "Choose an assistant from the sidebar or jump straight in with one of these."}
+        {activePersonaCopy ? activePersonaCopy.description : t.empty.subtitle}
       </p>
 
       <div className="mt-7 grid w-full gap-2.5 sm:grid-cols-1">
@@ -40,10 +42,10 @@ export default function EmptyState({ activePersona, onPickSuggestion }: EmptySta
             key={text}
             type="button"
             onClick={() => onPickSuggestion(text)}
-            className="group flex w-full items-center gap-3 rounded-xl border bg-card p-3.5 text-left text-sm shadow-subtle transition-all duration-150 hover:border-primary/40 hover:bg-accent/5 hover:shadow-raised"
+            className="group flex w-full items-center gap-3 rounded-xl border bg-card p-3.5 text-start text-sm shadow-subtle transition-all duration-150 hover:border-primary/40 hover:bg-accent/5 hover:shadow-raised"
           >
             <span className="flex-1 leading-relaxed">{text}</span>
-            <ArrowUp className="size-4 shrink-0 -rotate-45 text-muted-foreground transition-all duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+            <ArrowUp className="size-4 shrink-0 text-muted-foreground transition-all duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary rtl:-rotate-45" />
           </button>
         ))}
       </div>

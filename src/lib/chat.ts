@@ -5,9 +5,10 @@ import {
   Dumbbell,
   Megaphone,
   Music4,
-  Sparkles,
   UtensilsCrossed,
 } from "lucide-react";
+
+import type { PersonaId } from "./i18n/personas";
 
 export type MessageRole = "user" | "bot";
 
@@ -21,68 +22,58 @@ export interface ChatMessage {
 }
 
 export interface Persona {
-  /** System prompt sent to the model for this persona. */
+  id: PersonaId;
+  /**
+   * System prompt sent to the model. Deliberately English-only: this is model
+   * input, not UI copy, so it is not localised.
+   */
   value: string;
-  label: string;
-  description: string;
   icon: LucideIcon;
-  /** Shown on the welcome screen as a one-tap starter prompt. */
-  suggestion: string;
 }
 
 export const DEFAULT_PERSONA_VALUE = "Act as a general helpful assistant.";
 
 export const personas: Persona[] = [
   {
+    id: "fitness",
     value: "Chatbot react now as Fitness Expert",
-    label: "Fitness",
-    description: "Training plans, form checks and nutrition",
     icon: Dumbbell,
-    suggestion: "Design a 4-week beginner strength plan I can do at the gym 3x a week.",
   },
   {
+    id: "math",
     value: "Chatbot react now as Math Expert",
-    label: "Mathematics",
-    description: "Step-by-step problem solving",
     icon: Calculator,
-    suggestion: "Explain how to solve a quadratic equation, step by step.",
   },
   {
+    id: "cooking",
     value: "Chatbot react now as Cooking Expert",
-    label: "Cooking",
-    description: "Recipes, technique and kitchen science",
     icon: UtensilsCrossed,
-    suggestion: "Give me a weeknight pasta recipe that takes under 30 minutes.",
   },
   {
+    id: "fullstack",
     value: "Chatbot react now as Fullstack Expert",
-    label: "Full-stack",
-    description: "Architecture, APIs and code review",
     icon: CodeXml,
-    suggestion: "How should I structure a Next.js app with an authenticated API layer?",
   },
   {
+    id: "audio",
     value: "Chatbot react now as Audio Expert",
-    label: "Audio",
-    description: "Production, mixing and acoustics",
     icon: Music4,
-    suggestion: "What does a basic signal chain look like for mixing a vocal?",
   },
   {
+    id: "marketing",
     value: "Chatbot react now as Digital Marketing Expert",
-    label: "Marketing",
-    description: "Positioning, growth and campaigns",
     icon: Megaphone,
-    suggestion: "Draft a go-to-market outline for a new B2B SaaS product.",
   },
 ];
 
+export function personaIdForValue(value: string): PersonaId | undefined {
+  return personas.find((persona) => persona.value === value)?.id;
+}
+
 export const languages = [
   { value: "en-US", label: "English" },
-  { value: "fr-FR", label: "French" },
-  { value: "es-ES", label: "Spanish" },
-  { value: "ja-JP", label: "Japanese" },
-  { value: "ar-AE", label: "Arabic" },
+  { value: "fr-FR", label: "Français" },
+  { value: "es-ES", label: "Español" },
+  { value: "ja-JP", label: "日本語" },
+  { value: "ar-AE", label: "العربية" },
 ] as const;
-
-export const SUGGESTION_ICONS = { Sparkles } as const;

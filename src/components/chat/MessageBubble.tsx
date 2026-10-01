@@ -7,6 +7,7 @@ import { Check, CircleAlert, Copy, Sparkles, User } from "lucide-react";
 import Markdown from "@/components/chat/LazilyRenderedMarkdown";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { ChatMessage } from "@/lib/chat";
 
 function useCopy() {
@@ -32,6 +33,7 @@ function BubbleActions({
   content: string;
   onRetry?: () => void;
 }) {
+  const { t } = useI18n();
   const { copied, copy } = useCopy();
 
   return (
@@ -49,8 +51,8 @@ function BubbleActions({
           size="icon-sm"
           className="text-muted-foreground"
           onClick={onRetry}
-          title="Regenerate response"
-          aria-label="Regenerate response"
+          title={t.message.regenerate}
+          aria-label={t.message.regenerate}
         >
           <Sparkles />
         </Button>
@@ -60,8 +62,8 @@ function BubbleActions({
         size="icon-sm"
         className="text-muted-foreground"
         onClick={() => copy(content)}
-        title={copied ? "Copied" : "Copy message"}
-        aria-label={copied ? "Message copied" : "Copy message"}
+        title={copied ? t.message.copied : t.message.copyMessage}
+        aria-label={copied ? t.message.copiedMessage : t.message.copyMessage}
       >
         {copied ? <Check className="text-success" /> : <Copy />}
       </Button>
@@ -78,6 +80,7 @@ function MessageBubbleImpl({
   isStreaming: boolean;
   onRetry?: () => void;
 }) {
+  const { t } = useI18n();
   const isUser = message.role === "user";
   const isError = message.status === "error";
 
@@ -119,16 +122,16 @@ function MessageBubbleImpl({
         )}
       >
         <span className="px-1 text-xs font-medium text-muted-foreground">
-          {isUser ? "You" : "SAI"}
+          {isUser ? t.message.you : t.message.assistant}
         </span>
 
         <div
           className={cn(
-            "group/bubble relative rounded-2xl px-4 py-3 shadow-subtle",
+            "rounded-2xl px-4 py-3 shadow-subtle",
             isUser
-              ? "rounded-tr-sm bg-primary text-primary-foreground"
+              ? "rounded-tr-sm bg-primary text-primary-foreground rtl:rounded-tl-sm rtl:rounded-tr-none"
               : cn(
-                  "rounded-tl-sm border bg-card text-card-foreground",
+                  "rounded-tl-sm border bg-card text-card-foreground rtl:rounded-tr-sm rtl:rounded-tl-none",
                   isError && "border-destructive/40 bg-destructive/5"
                 )
           )}
@@ -136,7 +139,7 @@ function MessageBubbleImpl({
           {isError && (
             <p className="mb-2 flex items-center gap-2 text-sm font-medium text-destructive">
               <CircleAlert className="size-4 shrink-0" />
-              Something went wrong
+              {t.message.somethingWentWrong}
             </p>
           )}
 
@@ -150,7 +153,7 @@ function MessageBubbleImpl({
 
           {isStreaming && (
             <span
-              className="ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-caret-blink rounded-full bg-current align-text-bottom"
+              className="ms-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-caret-blink rounded-full bg-current align-text-bottom"
               aria-hidden
             />
           )}

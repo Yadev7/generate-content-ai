@@ -7,6 +7,7 @@ import rehypeHighlight from "rehype-highlight";
 import { Check, Copy } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { supportedLanguages } from "@/lib/highlight";
 
 function useCopyToClipboard() {
@@ -57,6 +58,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
 };
 
 function CodeBlock({ children }: { children?: React.ReactNode }) {
+  const { t } = useI18n();
   const { copied, copy } = useCopyToClipboard();
 
   // react-markdown renders a fenced block as <pre><code class="language-x">.
@@ -68,30 +70,30 @@ function CodeBlock({ children }: { children?: React.ReactNode }) {
 
   return (
     <div className="group/code my-4 overflow-hidden rounded-lg border bg-surface">
-      <div className="flex items-center justify-between border-b bg-secondary/50 px-3 py-1.5">
-        <span className="font-mono text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
-          {language ? (LANGUAGE_LABELS[language] ?? language) : "Code"}
+      <div className="flex items-center justify-between gap-2 border-b bg-secondary/50 px-3 py-1.5">
+        <span className="truncate font-mono text-[0.7rem] font-medium uppercase tracking-wider text-muted-foreground">
+          {language ? (LANGUAGE_LABELS[language] ?? language) : t.message.copyCode}
         </span>
         <button
           type="button"
           onClick={() => copy(value)}
-          aria-label={copied ? "Code copied" : "Copy code"}
-          className="inline-flex items-center gap-1.5 rounded px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          aria-label={copied ? t.message.copiedCode : t.message.copyCode}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
         >
           {copied ? (
             <>
               <Check className="size-3.5 text-success" />
-              <span className="sr-only sm:not-sr-only">Copied</span>
+              <span className="hidden sm:inline">{t.message.copied}</span>
             </>
           ) : (
             <>
               <Copy className="size-3.5" />
-              <span className="hidden sm:inline">Copy</span>
+              <span className="hidden sm:inline">{t.message.copy}</span>
             </>
           )}
         </button>
       </div>
-      <pre className="scrollbar-slim overflow-x-auto p-4 text-[0.8125rem] leading-6">
+      <pre className="scrollbar-slim overflow-x-auto p-4 text-start text-[0.8125rem] leading-6">
         {children}
       </pre>
     </div>

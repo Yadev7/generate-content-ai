@@ -5,6 +5,7 @@ import { Mic, Send, Square } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { languages } from "@/lib/chat";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 const MAX_TEXTAREA_HEIGHT = 200;
@@ -34,6 +35,7 @@ export default function Composer({
   voiceSupported,
   inputRef: externalRef,
 }: ComposerProps) {
+  const { t } = useI18n();
   const localRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = externalRef ?? localRef;
 
@@ -58,7 +60,7 @@ export default function Composer({
           )}
         >
           <label htmlFor="composer" className="sr-only">
-            Message
+            {t.composer.label}
           </label>
           <textarea
             id="composer"
@@ -72,7 +74,7 @@ export default function Composer({
                 if (canSend) onSubmit();
               }
             }}
-            placeholder="Send a message…"
+            placeholder={t.composer.placeholder}
             className="scrollbar-slim max-h-[200px] min-h-[2.5rem] flex-1 resize-none bg-transparent px-2 py-2 text-[0.9375rem] leading-6 outline-none placeholder:text-muted-foreground"
           />
 
@@ -82,13 +84,13 @@ export default function Composer({
                 variant="ghost"
                 size="icon"
                 onClick={onVoiceToggle}
-                aria-label={isRecording ? "Stop dictation" : "Start dictation"}
+                aria-label={isRecording ? t.composer.voiceStop : t.composer.voiceStart}
                 aria-pressed={isRecording}
-                title={isRecording ? "Stop dictation" : "Start dictation"}
+                title={isRecording ? t.composer.voiceStop : t.composer.voiceStart}
                 className={cn(
                   "rounded-xl",
                   isRecording
-                    ? "bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive animate-recording-pulse"
+                    ? "animate-recording-pulse bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive"
                     : "text-muted-foreground"
                 )}
               >
@@ -100,11 +102,11 @@ export default function Composer({
               size="icon"
               onClick={onSubmit}
               disabled={!canSend}
-              aria-label="Send message"
-              title="Send message (Enter)"
+              aria-label={t.composer.sendAria}
+              title={t.composer.sendTitle}
               className="rounded-xl"
             >
-              <Send className="-translate-x-px" />
+              <Send className="-translate-x-px rtl:translate-x-px rtl:rotate-180" />
             </Button>
           </div>
         </div>
@@ -114,7 +116,7 @@ export default function Composer({
             <kbd className="rounded border bg-muted px-1 py-0.5 font-sans text-[0.65rem] font-medium">
               Enter
             </kbd>{" "}
-            to send ·{" "}
+            {t.composer.hintSend} ·{" "}
             <kbd className="rounded border bg-muted px-1 py-0.5 font-sans text-[0.65rem] font-medium">
               Shift
             </kbd>
@@ -122,14 +124,15 @@ export default function Composer({
             <kbd className="rounded border bg-muted px-1 py-0.5 font-sans text-[0.65rem] font-medium">
               Enter
             </kbd>{" "}
-            for a new line
+            {t.composer.hintNewline}
           </p>
 
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="sr-only sm:not-sr-only">Voice language</span>
+            <span className="hidden sm:inline">{t.composer.voiceLanguage}</span>
             <select
               value={language}
               onChange={(e) => onLanguageChange(e.target.value)}
+              aria-label={t.composer.voiceLanguage}
               className="cursor-pointer rounded-md border bg-transparent px-1.5 py-1 text-xs text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
             >
               {languages.map((lang) => (

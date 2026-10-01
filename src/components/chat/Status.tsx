@@ -1,16 +1,23 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 /** Three-bar equalizer used while waiting on the model. */
-export function TypingIndicator({ label = "SAI is thinking" }: { label?: string }) {
+export function TypingIndicator() {
+  const { t } = useI18n();
+  const label = t.status.thinking;
+
   return (
     <div
       className="flex w-full animate-fade-in-up items-center gap-3"
       role="status"
       aria-live="polite"
     >
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-tl-sm border bg-card" aria-hidden>
+      <div
+        className="flex size-8 shrink-0 items-center justify-center rounded-tl-sm border bg-card rtl:rounded-tr-sm rtl:rounded-tl-none"
+        aria-hidden
+      >
         <div className="flex items-end gap-[3px]">
           {[0, 1, 2].map((i) => (
             <span
@@ -22,7 +29,7 @@ export function TypingIndicator({ label = "SAI is thinking" }: { label?: string 
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 rounded-2xl rounded-tl-sm border bg-card px-4 py-3.5 shadow-subtle">
+      <div className="flex items-center gap-2.5 rounded-2xl rounded-tl-sm border bg-card px-4 py-3.5 shadow-subtle rtl:rounded-tr-sm rtl:rounded-tl-none">
         <span className="sr-only">{label}</span>
         <div className="flex items-center gap-1.5" aria-hidden>
           {[0, 1, 2].map((i) => (
@@ -52,6 +59,8 @@ export function ErrorBanner({
   onDismiss?: () => void;
   className?: string;
 }) {
+  const { t } = useI18n();
+
   return (
     <div
       role="alert"
@@ -61,7 +70,9 @@ export function ErrorBanner({
       )}
     >
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-destructive">Request failed</p>
+        <p className="text-sm font-medium text-destructive">
+          {t.status.requestFailed}
+        </p>
         <p className="mt-0.5 break-words text-sm text-muted-foreground">{message}</p>
       </div>
 
@@ -72,7 +83,7 @@ export function ErrorBanner({
             onClick={onRetry}
             className="rounded-md px-2 py-1 text-sm font-medium text-primary transition-colors hover:bg-destructive/10"
           >
-            Retry
+            {t.status.retry}
           </button>
         )}
         {onDismiss && (
@@ -81,7 +92,7 @@ export function ErrorBanner({
             onClick={onDismiss}
             className="rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
-            Dismiss
+            {t.status.dismiss}
           </button>
         )}
       </div>

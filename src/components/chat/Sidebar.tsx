@@ -1,31 +1,39 @@
 "use client";
 
-import { MessageSquare, Plus, X } from "lucide-react";
+import { MessageSquare, PanelLeftClose, Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import ThemeSwitch from "@/components/ThemeSwitch";
-import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { getPersonaCopy } from "@/lib/i18n/personas";
 import type { Persona } from "@/lib/chat";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   personas: Persona[];
-  activePersona: string;
+  activePersonaValue: string;
   onSelectPersona: (value: string) => void;
   onNewChat: () => void;
+  onCollapse: () => void;
   isOpen: boolean;
   onClose: () => void;
+  isCollapsed: boolean;
   hasMessages: boolean;
 }
 
 export default function Sidebar({
   personas,
-  activePersona,
+  activePersonaValue,
   onSelectPersona,
   onNewChat,
+  onCollapse,
   isOpen,
   onClose,
+  isCollapsed,
   hasMessages,
 }: SidebarProps) {
+  const { t, locale } = useI18n();
+
   return (
     <>
       {/* Scrim for the mobile drawer. */}
@@ -39,19 +47,26 @@ export default function Sidebar({
       />
 
       <aside
-        aria-label="Chat settings"
+        aria-label={t.sidebar.assistants}
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-[17rem] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-out lg:static lg:z-auto lg:translate-x-0",
-          isOpen ? "animate-drawer-in" : "-translate-x-full"
+          "fixed inset-y-0 start-0 z-40 flex w-[17rem] shrink-0 flex-col border-e border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-out lg:static lg:z-auto lg:translate-x-0",
+          // The off-canvas translate is scoped to `max-lg` so it cannot win
+          // over `lg:translate-x-0` at desktop widths, which would slide the
+          // panel out of view entirely (notably in RTL, where `rtl:` variants
+          // are emitted after the plain ones).
+          isOpen
+            ? "ltr:animate-drawer-in rtl:animate-drawer-in-rtl"
+            : "max-lg:ltr:-translate-x-full max-lg:rtl:translate-x-full",
+          isCollapsed && "hidden lg:hidden"
         )}
       >
-        <div className="flex h-14 items-center justify-between px-3">
+        <div className="flex h-14 items-center justify-between gap-1 px-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10">
               <MessageSquare className="size-4 text-sidebar-accent" />
             </div>
             <span className="truncate text-sm font-semibold tracking-tight">
-              SAI Assistant
+              {t.brand.name}
             </span>
           </div>
 
@@ -60,9 +75,20 @@ export default function Sidebar({
             <Button
               variant="ghost"
               size="icon-sm"
+              className="hidden text-muted-foreground lg:inline-flex"
+              onClick={onCollapse}
+              aria-label={t.sidebar.collapse}
+              title={t.sidebar.collapse}
+            >
+              <PanelLeftClose className="size-4 rtl:-scale-x-100" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
               className="text-muted-foreground lg:hidden"
               onClick={onClose}
-              aria-label="Close menu"
+              aria-label={t.sidebar.close}
+              title={t.sidebar.close}
             >
               <X />
             </Button>
@@ -74,22 +100,23 @@ export default function Sidebar({
             onClick={onNewChat}
             disabled={!hasMessages}
             className="w-full justify-start gap-2.5 shadow-sm"
-            title={hasMessages ? "Start a new conversation" : "No conversation to clear"}
+            title={hasMessages ? t.sidebar.newConversation : t.sidebar.newConversationEmpty}
           >
             <Plus className="size-4" />
-            New conversation
+            {t.sidebar.newConversation}
           </Button>
         </div>
 
         <nav className="scrollbar-slim flex-1 overflow-y-auto px-3 pb-4">
           <p className="px-2 pb-2 pt-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-muted-foreground">
-            Assistants
+            {t.sidebar.assistants}
           </p>
 
           <ul className="space-y-0.5">
             {personas.map((persona) => {
-              const isActive = persona.value === activePersona;
+              const isActive = persona.value === activePersonaValue;
               const Icon = persona.icon;
+              const copy = getPersonaCopy(locale, persona.id);
 
               return (
                 <li key={persona.value}>
@@ -98,7 +125,7 @@ export default function Sidebar({
                     onClick={() => onSelectPersona(persona.value)}
                     aria-current={isActive ? "true" : undefined}
                     className={cn(
-                      "group flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors",
+                      "group flex w-full items-center gap-3 rounded-lg px-2 py-2 text-start transition-colors",
                       isActive
                         ? "bg-sidebar-muted text-sidebar-foreground"
                         : "text-muted-foreground hover:bg-sidebar-muted/60 hover:text-sidebar-foreground"
@@ -117,10 +144,10 @@ export default function Sidebar({
 
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">
-                        {persona.label}
+                        {copy.label}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {persona.description}
+                        {copy.description}
                       </span>
                     </span>
                   </button>
@@ -131,8 +158,8 @@ export default function Sidebar({
         </nav>
 
         <div className="border-t border-sidebar-border px-4 py-3">
-          <p className="text-xs text-muted-foreground">
-            Powered by a local LLM via LM Studio
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {t.sidebar.poweredBy}
           </p>
         </div>
       </aside>

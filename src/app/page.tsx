@@ -21,6 +21,9 @@ import {
   type ChatMessage,
 } from "@/lib/chat";
 import { exportChatToPdf } from "@/lib/exportChat";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { getPersonaCopy } from "@/lib/i18n/personas";
+import { getSpeechLocale } from "@/lib/i18n/locales";
 
 const LM_STUDIO_BASE_URL =
   process.env.NEXT_PUBLIC_LM_STUDIO_URL || "http://localhost:1234/v1";
@@ -31,19 +34,22 @@ const LM_STUDIO_MODEL = process.env.NEXT_PUBLIC_LM_STUDIO_MODEL || "";
 const TYPE_SPEED = 12;
 /** Distance from the bottom, in px, that still counts as "following along". */
 const STICK_THRESHOLD = 120;
+const SIDEBAR_STORAGE_KEY = "sai-sidebar-collapsed";
 
 let messageId = 0;
 const nextId = () => `msg-${++messageId}`;
 
 export default function ChatPage() {
+  const { t, locale } = useI18n();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [personaValue, setPersonaValue] = useState(DEFAULT_PERSONA_VALUE);
-  const [language, setLanguage] = useState("en-US");
+  const [language, setLanguage] = useState(getSpeechLocale(locale));
   const [isRecording, setIsRecording] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -64,6 +70,35 @@ export default function ChatPage() {
     () => personas.find((p) => p.value === personaValue),
     [personaValue]
   );
+
+  const activePersonaCopy = useMemo(
+    () =>
+      activePersona ? getPersonaCopy(locale, activePersona.id) : undefined,
+    [activePersona, locale]
+  );
+
+  // Restore and persist the desktop sidebar visibility choice.
+  useEffect(() => {
+    try {
+      setSidebarCollapsed(
+        window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "1"
+      );
+    } catch {
+      // Storage unavailable; fall back to the visible default.
+    }
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(SIDEBAR_STORAGE_KEY, next ? "1" : "0");
+      } catch {
+        // Non-fatal: the toggle still works for this session.
+      }
+      return next;
+    });
+  }, []);
 
   const cancelTyping = useCallback(() => {
     if (typingTimerRef.current) {
@@ -174,7 +209,7 @@ export default function ChatPage() {
         const generatedText: string | undefined = data?.choices?.[0]?.message?.content;
 
         if (!generatedText) {
-          throw new Error("The model returned an empty response.");
+          throw new Error(t.errors.emptyResponse);
         }
 
         // Reveal the reply progressively for a more natural feel.
@@ -219,7 +254,7 @@ export default function ChatPage() {
         }
       }
     },
-    [cancelTyping, stopStream]
+    [cancelTyping, stopStream, t.errors.emptyResponse]
   );
 
   const sendMessage = useCallback(
@@ -285,11 +320,11 @@ export default function ChatPage() {
     try {
       await exportChatToPdf(messagesRef.current);
     } catch {
-      setError("Could not generate the PDF. Please try again.");
+      setError(t.errors.pdfFailed);
     } finally {
       setIsExporting(false);
     }
-  }, []);
+  }, [t.errors.pdfFailed]);
 
   const toggleRecording = useCallback(() => {
     if (isRecording) {
@@ -324,8 +359,8 @@ export default function ChatPage() {
     recognition.onerror = (event) => {
       setError(
         event.error === "not-allowed"
-          ? "Microphone access was denied."
-          : `Dictation failed: ${event.error}`
+          ? t.errors.microphoneDenied
+          : `${t.errors.dictationFailed} (${event.error})`
       );
     };
 
@@ -337,24 +372,34 @@ export default function ChatPage() {
     recognitionRef.current = recognition;
     setIsRecording(true);
     recognition.start();
-  }, [input, isRecording, language]);
+  }, [input, isRecording, language, t.errors.dictationFailed, t.errors.microphoneDenied]);
+
+  // Keep dictation in step with the interface language unless the user has
+  // explicitly picked a different voice language.
+  useEffect(() => {
+    setLanguage(getSpeechLocale(locale));
+  }, [locale]);
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
       <Sidebar
         personas={personas}
-        activePersona={personaValue}
+        activePersonaValue={personaValue}
         onSelectPersona={handleSelectPersona}
         onNewChat={handleNewChat}
+        onCollapse={toggleSidebar}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        isCollapsed={sidebarCollapsed}
         hasMessages={messages.length > 0}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
-          activePersona={activePersona}
+          activePersonaCopy={activePersonaCopy}
           onOpenSidebar={() => setSidebarOpen(true)}
+          onExpandSidebar={toggleSidebar}
+          sidebarHidden={sidebarCollapsed}
           onNewChat={handleNewChat}
           onExport={handleExport}
           canExport={messages.length > 0 && !isExporting}
@@ -368,7 +413,7 @@ export default function ChatPage() {
           >
             {messages.length === 0 ? (
               <EmptyState
-                activePersona={activePersona}
+                activePersonaCopy={activePersonaCopy}
                 onPickSuggestion={sendMessage}
               />
             ) : (

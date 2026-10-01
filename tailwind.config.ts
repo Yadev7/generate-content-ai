@@ -158,6 +158,10 @@ const config = {
 				from: { transform: 'translateX(-100%)' },
 				to: { transform: 'translateX(0)' }
 			},
+			'drawer-in-rtl': {
+				from: { transform: 'translateX(100%)' },
+				to: { transform: 'translateX(0)' }
+			},
 			'recording-pulse': {
 				'0%': { boxShadow: '0 0 0 0 hsl(var(--destructive) / 0.5)' },
 				'70%': { boxShadow: '0 0 0 10px hsl(var(--destructive) / 0)' },
@@ -177,6 +181,7 @@ const config = {
 			'bar-bounce': 'bar-bounce 1s ease-in-out infinite',
 			'overlay-in': 'overlay-in 0.2s ease-out both',
 			'drawer-in': 'drawer-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both',
+			'drawer-in-rtl': 'drawer-in-rtl 0.25s cubic-bezier(0.16, 1, 0.3, 1) both',
 			'recording-pulse': 'recording-pulse 1.6s ease-out infinite'
   		}
 		}

@@ -1,10 +1,17 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import ThemeSwitch from "@/components/ThemeSwitch";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
+// Client so the marketing copy and the brand name follow the visitor's chosen
+// locale, which lives in localStorage and so is not visible on the server.
 const AuthLayout = ({ children }: { children: ReactNode }) => {
+  const { t } = useI18n();
+
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
       {/* Form panel */}
@@ -21,7 +28,7 @@ const AuthLayout = ({ children }: { children: ReactNode }) => {
               height={28}
               className="size-7 rounded-md object-cover"
             />
-            SAI Assistant
+            {t.brand.name}
           </Link>
           <ThemeSwitch />
         </div>
@@ -45,21 +52,19 @@ const AuthLayout = ({ children }: { children: ReactNode }) => {
         <div className="relative flex h-full flex-col justify-center px-14">
           <blockquote className="max-w-md">
             <p className="text-2xl font-semibold leading-snug tracking-tight">
-              One workspace. Six specialised assistants. Answers grounded in a
-              model you control.
+              {t.authPage.headline}
             </p>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Switch between fitness, mathematics, cooking, engineering, audio
-              and marketing personas without losing your conversation.
+              {t.authPage.subhead}
             </p>
           </blockquote>
 
           <ul className="mt-10 grid grid-cols-2 gap-3">
             {[
-              "Local inference",
-              "Voice input",
-              "Markdown & code",
-              "PDF export",
+              t.authPage.features.local,
+              t.authPage.features.voice,
+              t.authPage.features.markdown,
+              t.authPage.features.pdf,
             ].map((feature) => (
               <li
                 key={feature}

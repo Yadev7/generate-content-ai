@@ -1,482 +1,392 @@
 "use client";
 
 import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { ArrowDown } from "lucide-react";
+  ArrowRight,
+  Award,
+  BookOpen,
+  Check,
+  Clock,
+  Globe,
+  Infinity,
+  ListChecks,
+  MessageSquare,
+  School,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
 
-import Composer from "@/components/chat/Composer";
-import EmptyState from "@/components/chat/EmptyState";
-import { MessageBubble } from "@/components/chat/MessageBubble";
-import Sidebar from "@/components/chat/Sidebar";
-import { ErrorBanner, TypingIndicator } from "@/components/chat/Status";
-import TopBar from "@/components/chat/TopBar";
-import {
-  DEFAULT_PERSONA_VALUE,
-  personas,
-  type ChatMessage,
-} from "@/lib/chat";
-import { exportChatToPdf } from "@/lib/exportChat";
-import { useI18n } from "@/lib/i18n/I18nProvider";
-import { getPersonaCopy } from "@/lib/i18n/personas";
-import { getSpeechLocale } from "@/lib/i18n/locales";
+import { Button } from "@/components/ui/button";
+import { FREEMIUM_FEATURES, PRIME_HIGHLIGHTS } from "@/lib/freemium";
 
-const LM_STUDIO_BASE_URL =
-  process.env.NEXT_PUBLIC_LM_STUDIO_URL || "http://localhost:1234/v1";
-const LM_STUDIO_API_KEY = process.env.NEXT_PUBLIC_LM_STUDIO_API_KEY || "lm-studio";
-const LM_STUDIO_MODEL = process.env.NEXT_PUBLIC_LM_STUDIO_MODEL || "";
-
-/** Token reveal rate for streamed replies, in ms per character. */
-const TYPE_SPEED = 12;
-/** Distance from the bottom, in px, that still counts as "following along". */
-const STICK_THRESHOLD = 120;
-const SIDEBAR_STORAGE_KEY = "sai-sidebar-collapsed";
-
-let messageId = 0;
-const nextId = () => `msg-${++messageId}`;
-
-export default function ChatPage() {
-  const { t, locale } = useI18n();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [personaValue, setPersonaValue] = useState(DEFAULT_PERSONA_VALUE);
-  const [language, setLanguage] = useState(getSpeechLocale(locale));
-  const [isRecording, setIsRecording] = useState(false);
-  const [isBusy, setIsBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(false);
-  const [showScrollButton, setShowScrollButton] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  /** Tracks whether the user has scrolled up, so we stop yanking them down. */
-  const stickToBottomRef = useRef(true);
-  const messagesRef = useRef<ChatMessage[]>([]);
-
-  messagesRef.current = messages;
-
-  const activePersona = useMemo(
-    () => personas.find((p) => p.value === personaValue),
-    [personaValue]
-  );
-
-  const activePersonaCopy = useMemo(
-    () =>
-      activePersona ? getPersonaCopy(locale, activePersona.id) : undefined,
-    [activePersona, locale]
-  );
-
-  // Restore and persist the desktop sidebar visibility choice.
-  useEffect(() => {
-    try {
-      setSidebarCollapsed(
-        window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "1"
-      );
-    } catch {
-      // Storage unavailable; fall back to the visible default.
-    }
-  }, []);
-
-  const toggleSidebar = useCallback(() => {
-    setSidebarCollapsed((prev) => {
-      const next = !prev;
-      try {
-        window.localStorage.setItem(SIDEBAR_STORAGE_KEY, next ? "1" : "0");
-      } catch {
-        // Non-fatal: the toggle still works for this session.
-      }
-      return next;
-    });
-  }, []);
-
-  const cancelTyping = useCallback(() => {
-    if (typingTimerRef.current) {
-      clearTimeout(typingTimerRef.current);
-      typingTimerRef.current = null;
-    }
-  }, []);
-
-  const stopStream = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    cancelTyping();
-  }, [cancelTyping]);
-
-  // Clean up in-flight work when the page unmounts.
-  useEffect(() => {
-    const recognition = recognitionRef.current;
-    return () => {
-      stopStream();
-      recognition?.abort();
-    };
-  }, [stopStream]);
-
-  useEffect(() => {
-    setVoiceSupported(
-      typeof window !== "undefined" && "webkitSpeechRecognition" in window
-    );
-  }, []);
-
-  // Auto-scroll, but only when the user is already following along.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const onScroll = () => {
-      const distanceFromBottom =
-        el.scrollHeight - el.scrollTop - el.clientHeight;
-      const isAtBottom = distanceFromBottom <= STICK_THRESHOLD;
-      stickToBottomRef.current = isAtBottom;
-      setShowScrollButton(!isAtBottom);
-    };
-
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    if (stickToBottomRef.current) {
-      bottomRef.current?.scrollIntoView({ block: "end" });
-    }
-  }, [messages, isBusy]);
-
-  const scrollToBottom = useCallback(() => {
-    stickToBottomRef.current = true;
-    setShowScrollButton(false);
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, []);
-
-  const runCompletion = useCallback(
-    async (history: ChatMessage[], systemPrompt: string) => {
-      stopStream();
-      setError(null);
-      setIsBusy(true);
-
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      const botId = nextId();
-      setMessages((prev) => [
-        ...prev,
-        { id: botId, role: "bot", content: "", status: "streaming" },
-      ]);
-
-      const patchBot = (patch: Partial<ChatMessage>) =>
-        setMessages((prev) =>
-          prev.map((m) => (m.id === botId ? { ...m, ...patch } : m))
-        );
-
-      try {
-        const response = await fetch(`${LM_STUDIO_BASE_URL}/chat/completions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${LM_STUDIO_API_KEY}`,
-          },
-          signal: controller.signal,
-          body: JSON.stringify({
-            model: LM_STUDIO_MODEL,
-            messages: [
-              { role: "system", content: systemPrompt },
-              ...history.map((m) => ({
-                role: m.role === "bot" ? "assistant" : "user",
-                content: m.content,
-              })),
-            ],
-            stream: false,
-          }),
-        });
-
-        if (!response.ok) {
-          const body = await response.json().catch(() => null);
-          throw new Error(
-            body?.error?.message ?? `Request failed with status ${response.status}`
-          );
-        }
-
-        const data = await response.json();
-        const generatedText: string | undefined = data?.choices?.[0]?.message?.content;
-
-        if (!generatedText) {
-          throw new Error(t.errors.emptyResponse);
-        }
-
-        // Reveal the reply progressively for a more natural feel.
-        let index = 0;
-        const step = () => {
-          if (index >= generatedText.length) {
-            patchBot({ content: generatedText, status: "complete" });
-            typingTimerRef.current = null;
-            return;
-          }
-
-          index += 2;
-          patchBot({ content: generatedText.slice(0, index) });
-          typingTimerRef.current = setTimeout(step, TYPE_SPEED);
-        };
-        step();
-      } catch (err) {
-        const isAbort =
-          err instanceof DOMException && err.name === "AbortError";
-
-        if (isAbort) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === botId
-                ? m.content
-                  ? { ...m, status: "complete" }
-                  : null
-                : m
-            ).filter((m): m is ChatMessage => m !== null)
-          );
-        } else {
-          cancelTyping();
-          const message =
-            err instanceof Error ? err.message : "Unexpected error";
-          patchBot({ content: message, status: "error" });
-          setError(message);
-        }
-      } finally {
-        if (abortRef.current === controller) {
-          abortRef.current = null;
-          setIsBusy(false);
-        }
-      }
+export default function HomePage() {
+  const prices = [
+    {
+      id: "monthly",
+      name: "Sai Prime – Monthly",
+      price: "$5",
+      interval: "per month",
+      description: "Perfect for exam season or a short revision burst.",
+      features: ["Full access to all tutors", "Unlimited revision", "Cancel anytime"],
     },
-    [cancelTyping, stopStream, t.errors.emptyResponse]
-  );
-
-  const sendMessage = useCallback(
-    (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
-
-      const history = messagesRef.current;
-      const userMessage: ChatMessage = {
-        id: nextId(),
-        role: "user",
-        content: trimmed,
-        status: "complete",
-      };
-
-      setInput("");
-      setError(null);
-      stickToBottomRef.current = true;
-      setMessages((prev) => [...prev, userMessage]);
-
-      void runCompletion(
-        [...history, userMessage],
-        personaValue || DEFAULT_PERSONA_VALUE
-      );
+    {
+      id: "yearly",
+      name: "Sai Prime – Yearly",
+      price: "$15",
+      interval: "per year",
+      description: "Best value: 2 months free vs. monthly. Ideal for the full school year.",
+      features: [
+        "Full access to all tutors",
+        "Unlimited revision",
+        "2 months free vs. monthly",
+        "Cancel anytime",
+      ],
     },
-    [personaValue, runCompletion]
-  );
+  ];
 
-  const handleRetry = useCallback(() => {
-    const history = messagesRef.current;
-    const lastUserIndex = [...history]
-      .map((m) => m.role)
-      .lastIndexOf("user");
-    if (lastUserIndex === -1) return;
+  const features = [
+    {
+      icon: Zap,
+      title: "Explains, never just tells",
+      body: "Get step-by-step solutions with working shown, not just the final answer.",
+    },
+    {
+      icon: BookOpen,
+      title: "Built for school revision",
+      body: "Covers Maths, Physics, Languages, Literature, Philosophy and History at secondary level.",
+    },
+    {
+      icon: ListChecks,
+      title: "Finds knowledge gaps",
+      body: "The General Exam Quiz Master marks answers against mark-scheme style feedback and re-tests weak areas.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Safe & local-first",
+      body: "Runs via LM Studio locally where configured, with server-only prompts and strict access control.",
+    },
+  ];
 
-    // Drop the failed reply and anything after it, then re-ask.
-    const truncated = history.slice(0, lastUserIndex + 1);
-    setMessages(truncated);
-    stickToBottomRef.current = true;
-    void runCompletion(truncated, personaValue || DEFAULT_PERSONA_VALUE);
-  }, [personaValue, runCompletion]);
-
-  const handleNewChat = useCallback(() => {
-    stopStream();
-    recognitionRef.current?.abort();
-    setIsRecording(false);
-    setMessages([]);
-    setInput("");
-    setError(null);
-    setIsBusy(false);
-    stickToBottomRef.current = true;
-    messagesRef.current = [];
-    inputRef.current?.focus();
-  }, [stopStream]);
-
-  const handleSelectPersona = useCallback((value: string) => {
-    setPersonaValue(value);
-    setSidebarOpen(false);
-  }, []);
-
-  const handleExport = useCallback(async () => {
-    setIsExporting(true);
-    try {
-      await exportChatToPdf(messagesRef.current);
-    } catch {
-      setError(t.errors.pdfFailed);
-    } finally {
-      setIsExporting(false);
-    }
-  }, [t.errors.pdfFailed]);
-
-  const toggleRecording = useCallback(() => {
-    if (isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
-      return;
-    }
-
-    if (!("webkitSpeechRecognition" in window)) return;
-
-    const SpeechRecognitionCtor = (
-      window as unknown as {
-        webkitSpeechRecognition: new () => SpeechRecognition;
-      }
-    ).webkitSpeechRecognition;
-
-    const recognition = new SpeechRecognitionCtor();
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.lang = language;
-
-    const baseText = input.trim();
-
-    recognition.onresult = (event) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setInput([baseText, transcript].filter(Boolean).join(" "));
-    };
-
-    recognition.onerror = (event) => {
-      setError(
-        event.error === "not-allowed"
-          ? t.errors.microphoneDenied
-          : `${t.errors.dictationFailed} (${event.error})`
-      );
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-      recognitionRef.current = null;
-    };
-
-    recognitionRef.current = recognition;
-    setIsRecording(true);
-    recognition.start();
-  }, [input, isRecording, language, t.errors.dictationFailed, t.errors.microphoneDenied]);
-
-  // Keep dictation in step with the interface language unless the user has
-  // explicitly picked a different voice language.
-  useEffect(() => {
-    setLanguage(getSpeechLocale(locale));
-  }, [locale]);
+  const tutors = [
+    {
+      title: "Study Desk (Free, no sign-in)",
+      subtitle: "General revision help for any topic. Perfect for a quick question.",
+      icon: MessageSquare,
+      free: "15 messages/day",
+    },
+    {
+      title: "STEM Tutor (Free, sign-in)",
+      subtitle: "Maths & Physics – Socratic questioning, formulas formatted cleanly, misconceptions named.",
+      icon: Zap,
+      free: "15 messages/day",
+    },
+    {
+      title: "Language & Literature Expert (Free, sign-in)",
+      subtitle: "Close reading, literary technique, language accuracy and analytical writing.",
+      icon: Globe,
+      free: "15 messages/day",
+    },
+    {
+      title: "Humanities Coach (Sai Prime)",
+      subtitle: "Essay structures for every task type, plus named philosophical methodologies.",
+      icon: School,
+      free: "Locked",
+    },
+    {
+      title: "General Exam Quiz Master (Sai Prime)",
+      subtitle: "Cross-subject exam practice, mark-scheme marking, weak-topic tracking, spaced re-testing.",
+      icon: Award,
+      free: "Locked",
+    },
+  ];
 
   return (
-    <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
-      <Sidebar
-        personas={personas}
-        activePersonaValue={personaValue}
-        onSelectPersona={handleSelectPersona}
-        onNewChat={handleNewChat}
-        onCollapse={toggleSidebar}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        isCollapsed={sidebarCollapsed}
-        hasMessages={messages.length > 0}
-      />
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar
-          activePersonaCopy={activePersonaCopy}
-          onOpenSidebar={() => setSidebarOpen(true)}
-          onExpandSidebar={toggleSidebar}
-          sidebarHidden={sidebarCollapsed}
-          onNewChat={handleNewChat}
-          onExport={handleExport}
-          canExport={messages.length > 0 && !isExporting}
-          isExporting={isExporting}
-        />
-
-        <div className="relative flex min-h-0 flex-1 flex-col">
-          <div
-            ref={scrollRef}
-            className="scrollbar-slim flex-1 overflow-y-auto overscroll-contain"
-          >
-            {messages.length === 0 ? (
-              <EmptyState
-                activePersonaCopy={activePersonaCopy}
-                onPickSuggestion={sendMessage}
-              />
-            ) : (
-              <div className="mx-auto w-full max-w-3xl px-4 py-6">
-                <div className="space-y-6">
-                  {messages.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      isStreaming={message.status === "streaming"}
-                      onRetry={
-                        message.status === "error" ? handleRetry : undefined
-                      }
-                    />
-                  ))}
-                  {isBusy &&
-                    messages[messages.length - 1]?.status !== "streaming" && (
-                      <TypingIndicator />
-                    )}
-                </div>
-              </div>
-            )}
-
-            <div ref={bottomRef} className="h-1" />
-          </div>
-
-          {showScrollButton && messages.length > 0 && (
-            <button
-              type="button"
-              onClick={scrollToBottom}
-              aria-label="Scroll to latest message"
-              className="absolute bottom-4 left-1/2 flex size-9 -translate-x-1/2 animate-fade-in items-center justify-center rounded-full border bg-card text-muted-foreground shadow-panel transition-colors hover:text-foreground"
-            >
-              <ArrowDown className="size-4" />
-            </button>
-          )}
+    <div className="relative flex min-h-dvh flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="flex items-center gap-2.5 rounded-md text-sm font-semibold tracking-tight">
+            <span className="flex size-7 items-center justify-center rounded-md bg-primary/10">
+              <Sparkles className="size-4 text-primary" />
+            </span>
+            SaiGPT
+          </Link>
+          <nav className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/chat">Open Chat</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/chat">Get Started</Link>
+            </Button>
+          </nav>
         </div>
+      </header>
 
-        {error && (
-          <div className="px-4 pb-1">
-            <div className="mx-auto w-full max-w-3xl">
-              <ErrorBanner
-                message={error}
-                onRetry={messages.length > 0 ? handleRetry : undefined}
-                onDismiss={() => setError(null)}
-              />
+      <main className="flex-1">
+        <section className="relative overflow-hidden border-b bg-gradient-to-b from-background via-background to-muted/40">
+          <div className="pointer-events-none absolute -top-24 right-0 h-[28rem] w-[28rem] rounded-full bg-primary/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-32 left-0 h-[24rem] w-[24rem] rounded-full bg-primary/5 blur-3xl" />
+
+          <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center px-4 py-16 text-center sm:px-6 sm:py-20 lg:px-8">
+            <div className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs shadow-sm">
+              <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
+                <Clock className="size-3.5" />
+                Built for exam revision
+              </span>
+              <span className="px-1 text-muted-foreground">Students &amp; parents</span>
+            </div>
+
+            <h1 className="mt-6 max-w-4xl text-3xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+              SaiGPT – Study smarter. Revise faster. Get exam-ready.
+            </h1>
+            <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground sm:mt-6 sm:text-lg">
+              Ai-powered revision that actually teaches. SaiGPT gives step-by-step explanations, marks your answers like an examiner, and focuses on your weak spots — not just the answer.
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:mt-10">
+              <Button size="lg" asChild>
+                <Link href="/chat">
+                  Start revising for free
+                  <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" asChild>
+                <Link href="#compare">See Free vs Sai Prime</Link>
+              </Button>
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground sm:mt-10">
+              <div className="flex items-center gap-1.5">
+                <Check className="size-4 text-primary" />
+                No sign-up required to try Study Desk
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Check className="size-4 text-primary" />
+                Student-first, parent-friendly
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Check className="size-4 text-primary" />
+                Cancel anytime with Sai Prime
+              </div>
             </div>
           </div>
-        )}
+        </section>
 
-        <Composer
-          value={input}
-          onChange={setInput}
-          onSubmit={() => sendMessage(input)}
-          onVoiceToggle={toggleRecording}
-          isRecording={isRecording}
-          isBusy={isBusy}
-          language={language}
-          onLanguageChange={setLanguage}
-          voiceSupported={voiceSupported}
-          inputRef={inputRef}
-        />
-      </div>
+        <section className="border-b bg-background">
+          <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Purpose-built for school exams</h2>
+              <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
+                SaiGPT moves beyond generic chat. Every tutor is designed to teach the way examiners expect.
+              </p>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-4">
+              {features.map((f) => {
+                const Icon = f.icon;
+                return (
+                  <div
+                    key={f.title}
+                    className="group flex flex-col rounded-2xl border bg-card p-5 shadow-sm transition-all duration-150 hover:border-primary/40 hover:shadow-raised"
+                  >
+                    <div className="flex size-10 items-center justify-center rounded-xl border bg-background">
+                      <Icon className="size-5 text-primary" />
+                    </div>
+                    <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-b bg-muted/40">
+          <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Specialist tutors, exactly when you need them</h2>
+              <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
+                Start free with Study Desk, unlock more with a free sign-in, or go unlimited with Sai Prime for the hardest revision.
+              </p>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3">
+              {tutors.map((tutor) => {
+                const Icon = tutor.icon;
+                return (
+                  <div key={tutor.title} className="flex flex-col rounded-2xl border bg-card p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-background">
+                        <Icon className="size-5 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="truncate text-base font-semibold">{tutor.title}</h3>
+                        <p className="text-xs text-muted-foreground">{tutor.free}</p>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{tutor.subtitle}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 flex justify-center">
+              <Button size="lg" asChild>
+                <Link href="/chat">
+                  Try the tutors now
+                  <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <section id="compare" className="border-b bg-background">
+          <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Free vs Sai Prime</h2>
+              <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
+                Clear, honest limits. No surprise paywalls. Perfect for students and parents.
+              </p>
+            </div>
+
+            <div className="mt-8 overflow-hidden rounded-2xl border shadow-sm sm:mt-10">
+              <div className="grid grid-cols-3 bg-muted/50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:px-6">
+                <div>Feature</div>
+                <div className="text-center">Free</div>
+                <div className="text-center">Sai Prime</div>
+              </div>
+              <div className="divide-y">
+                {FREEMIUM_FEATURES.map((row) => (
+                  <div
+                    key={row.label}
+                    className="grid grid-cols-3 items-center gap-2 px-4 py-3 text-sm sm:px-6"
+                  >
+                    <div>
+                      <div className="font-medium">{row.label}</div>
+                      <div className="text-xs text-muted-foreground">{row.description}</div>
+                    </div>
+                    <div className="text-center text-muted-foreground">{row.free}</div>
+                    <div className="text-center font-medium text-primary">{row.prime}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {PRIME_HIGHLIGHTS.map((h) => (
+                <div key={h} className="flex items-start gap-2 rounded-lg border bg-card px-3 py-2 text-sm shadow-sm">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <span className="leading-relaxed">{h}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-muted/40">
+          <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+            <div className="mx-auto max-w-4xl text-center">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                Simple, student-friendly pricing
+              </h2>
+              <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
+                Get unlimited access to every tutor for less than a cup of coffee per month.
+              </p>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 lg:mx-auto lg:max-w-4xl">
+              {prices.map((p) => (
+                <div
+                  key={p.id}
+                  className="relative flex flex-col rounded-2xl border bg-card p-6 shadow-sm ring-1 ring-primary/10"
+                >
+                  {p.id === "yearly" && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-medium text-primary-foreground shadow-sm">
+                      Best value
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-lg font-semibold">{p.name}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">{p.description}</p>
+                  </div>
+                  <div className="mt-5 flex items-end gap-1">
+                    <span className="text-4xl font-bold tracking-tight">{p.price}</span>
+                    <span className="mb-1 text-sm text-muted-foreground">{p.interval}</span>
+                  </div>
+                  <ul className="mt-5 space-y-2">
+                    {p.features.map((f) => (
+                      <li key={f} className="flex items-center gap-2 text-sm">
+                        <Check className="size-4 text-primary" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-6 flex flex-1 items-end">
+                    <Button size="lg" className="w-full" asChild>
+                      <Link href="/chat">Start with Sai Prime</Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Infinity className="size-4" />
+                Unlimited revision with Prime
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Users className="size-4" />
+                Parent-approved, distraction-free
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="size-4" />
+                Cancel anytime, no lock-in
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t bg-background">
+          <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                Ready to get exam-ready?
+              </h2>
+              <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
+                Start with a free question in Study Desk, or dive straight into your weakest topic.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <Button size="lg" asChild>
+                  <Link href="/chat">
+                    Open SaiGPT Chat
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <Link href="#compare">Compare Free vs Prime</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t bg-muted/30">
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-center text-sm text-muted-foreground sm:flex-row sm:px-6 lg:px-8">
+          <p>© {new Date().getFullYear()} SaiGPT. Built for students, trusted by parents.</p>
+          <div className="flex items-center gap-4">
+            <Link href="/chat" className="hover:text-foreground">
+              Chat
+            </Link>
+            <Link href="#compare" className="hover:text-foreground">
+              Pricing
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -20,6 +20,11 @@ interface ComposerProps {
   language: string;
   onLanguageChange: (value: string) => void;
   voiceSupported: boolean;
+  /**
+   * Free messages left today, or `null` when the account is on Prime. Drives the
+   * "N free messages left" hint and disables sending once the cap is spent.
+   */
+  quotaLeft?: number | null;
   inputRef?: React.RefObject<HTMLTextAreaElement>;
 }
 
@@ -33,9 +38,10 @@ export default function Composer({
   language,
   onLanguageChange,
   voiceSupported,
+  quotaLeft,
   inputRef: externalRef,
 }: ComposerProps) {
-  const { t } = useI18n();
+  const { t, format } = useI18n();
   const localRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = externalRef ?? localRef;
 
@@ -48,7 +54,8 @@ export default function Composer({
     el.style.overflowY = el.scrollHeight > MAX_TEXTAREA_HEIGHT ? "auto" : "hidden";
   }, [value, textareaRef]);
 
-  const canSend = value.trim().length > 0 && !isBusy;
+  const outOfQuota = quotaLeft === 0;
+  const canSend = value.trim().length > 0 && !isBusy && !outOfQuota;
 
   return (
     <div className="border-t bg-background/80 backdrop-blur-md">
@@ -74,7 +81,9 @@ export default function Composer({
                 if (canSend) onSubmit();
               }
             }}
-            placeholder={t.composer.placeholder}
+            placeholder={
+              outOfQuota ? t.composer.placeholderExhausted : t.composer.placeholder
+            }
             className="scrollbar-slim max-h-[200px] min-h-[2.5rem] flex-1 resize-none bg-transparent px-2 py-2 text-[0.9375rem] leading-6 outline-none placeholder:text-muted-foreground"
           />
 
@@ -112,20 +121,35 @@ export default function Composer({
         </div>
 
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1">
-          <p className="text-xs text-muted-foreground">
-            <kbd className="rounded border bg-muted px-1 py-0.5 font-sans text-[0.65rem] font-medium">
-              Enter
-            </kbd>{" "}
-            {t.composer.hintSend} ·{" "}
-            <kbd className="rounded border bg-muted px-1 py-0.5 font-sans text-[0.65rem] font-medium">
-              Shift
-            </kbd>
-            +
-            <kbd className="rounded border bg-muted px-1 py-0.5 font-sans text-[0.65rem] font-medium">
-              Enter
-            </kbd>{" "}
-            {t.composer.hintNewline}
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="text-xs text-muted-foreground">
+              <kbd className="rounded border bg-muted px-1 py-0.5 font-sans text-[0.65rem] font-medium">
+                Enter
+              </kbd>{" "}
+              {t.composer.hintSend} ·{" "}
+              <kbd className="rounded border bg-muted px-1 py-0.5 font-sans text-[0.65rem] font-medium">
+                Shift
+              </kbd>
+              +
+              <kbd className="rounded border bg-muted px-1 py-0.5 font-sans text-[0.65rem] font-medium">
+                Enter
+              </kbd>{" "}
+              {t.composer.hintNewline}
+            </p>
+
+            {/* The free allowance is enforced on the server, so show what is
+                left before a student discovers it by hitting the cap. */}
+            {quotaLeft !== null && quotaLeft !== undefined && !outOfQuota && (
+              <p className="text-xs text-muted-foreground">
+                {format(t.composer.quotaLeft, { count: quotaLeft })}
+              </p>
+            )}
+            {outOfQuota && (
+              <p className="text-xs font-medium text-primary">
+                {t.composer.quotaExhausted}
+              </p>
+            )}
+          </div>
 
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="hidden sm:inline">{t.composer.voiceLanguage}</span>

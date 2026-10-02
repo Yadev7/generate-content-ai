@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { ClerkProvider } from "@clerk/nextjs";
 
 import "./globals.css";
+import { LocalizedClerkProvider } from "./LocalizedClerkProvider";
 import { Providers } from "./providers";
 
 const geistSans = localFont({
@@ -20,9 +20,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SAI Assistant",
+  title: "SaiGPT – AI Revision & Exam Prep for Students",
   description:
-    "A conversational AI workspace with specialised assistants for fitness, mathematics, cooking, engineering, audio and marketing.",
+    "SaiGPT helps students revise smarter with specialist tutors for Maths, Physics, Languages, Humanities and exam quizzes. Free tier available, Sai Prime for unlimited exam prep.",
   icons: {
     icon: "/logo.png",
   },
@@ -41,16 +41,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html
-        lang="en"
-        suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable}`}
-      >
-        <body className="min-h-dvh bg-background font-sans text-foreground">
-          <Providers>{children}</Providers>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable}`}
+    >
+      <body className="min-h-dvh bg-background font-sans text-foreground">
+        <Providers>
+          <LocalizedClerkProvider>{children}</LocalizedClerkProvider>
+        </Providers>
+      </body>
+    </html>
   );
 }

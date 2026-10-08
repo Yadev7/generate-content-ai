@@ -183,7 +183,11 @@ async function nextSeq(db: Firestore, userId: string): Promise<number> {
 
 async function totalCharactersIn(db: Firestore, userId: string): Promise<number> {
   const snap = await notesCollection(db, userId).select("characters").get();
-  return snap.docs.reduce((sum, doc) => sum + Number(doc.get("characters") ?? 0), 0);
+  return snap.docs.reduce(
+    (sum: number, doc: FirebaseFirestore.QueryDocumentSnapshot) =>
+      sum + Number(doc.get("characters") ?? 0),
+    0
+  );
 }
 
 const fromDoc = (userId: string, id: string, data: Record<string, unknown>): StoredNote => ({

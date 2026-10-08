@@ -1,6 +1,10 @@
 import "server-only";
 
-import type { Firestore, Transaction } from "firebase-admin/firestore";
+import type {
+  Firestore,
+  QueryDocumentSnapshot,
+  Transaction,
+} from "firebase-admin/firestore";
 
 import { getDb } from "@/lib/firebase/admin";
 
@@ -184,7 +188,7 @@ async function nextSeq(db: Firestore, userId: string): Promise<number> {
 async function totalCharactersIn(db: Firestore, userId: string): Promise<number> {
   const snap = await notesCollection(db, userId).select("characters").get();
   return snap.docs.reduce(
-    (sum: number, doc: FirebaseFirestore.QueryDocumentSnapshot) =>
+    (sum: number, doc: QueryDocumentSnapshot) =>
       sum + Number(doc.get("characters") ?? 0),
     0
   );
@@ -273,7 +277,7 @@ export async function listNotes(userId: string): Promise<StoredNote[]> {
   }
 
   const snap = await notesCollection(db, userId).orderBy("seq", "desc").get();
-  return snap.docs.map((doc) =>
+  return snap.docs.map((doc: QueryDocumentSnapshot) =>
     fromDoc(userId, doc.id, doc.data() as Record<string, unknown>)
   );
 }

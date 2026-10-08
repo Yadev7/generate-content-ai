@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Firestore } from "firebase-admin/firestore";
+import type { Firestore, Transaction } from "firebase-admin/firestore";
 
 import { getDb } from "@/lib/firebase/admin";
 
@@ -9,9 +9,9 @@ import { getDb } from "@/lib/firebase/admin";
  *
  * Two backends behind one API:
  *
- *  - **Firestore** when a service account is configured. Notes are stored at
- *    `users/{uid}/notes/{noteId}` and survive restarts and multiple instances.
- *  - **In-process** otherwise, for local development and the test suite.
+ *   - **Firestore** when a service account is configured. Notes are stored at
+ *     `users/{uid}/notes/{noteId}` and survive restarts and multiple instances.
+ *   - **In-process** otherwise, for local development and the test suite.
  *
  * The fallback is not silent: `src/lib/firebase/admin.ts` warns in production. A
  * configured backend is never silently downgraded — if Firestore is present and
@@ -172,7 +172,7 @@ async function nextSeq(db: Firestore, userId: string): Promise<number> {
     .collection("meta")
     .doc("counters");
 
-  return db.runTransaction(async (tx) => {
+  return db.runTransaction(async (tx: Transaction) => {
     const snap = await tx.get(counterRef);
     const current = snap.exists ? Number(snap.get("noteSeq") ?? 0) : 0;
     const next = Number.isFinite(current) ? current + 1 : 1;
